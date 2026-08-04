@@ -45,6 +45,12 @@ final class Inventory implements Bootable {
 	 * @param \WC_Product|null $product
 	 */
 	public function apply_new_product_defaults( int $product_id, $product = null ): void {
+		// The installer seeds made-to-order products (manage_stock off) and
+		// suppresses these defaults for the duration of the run.
+		if ( apply_filters( 'haramara_suppress_inventory_defaults', false ) ) {
+			return;
+		}
+
 		$product = $product instanceof \WC_Product ? $product : wc_get_product( $product_id );
 		if ( ! $product instanceof \WC_Product ) {
 			return;

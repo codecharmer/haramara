@@ -308,6 +308,11 @@ final class Installer {
 		$products        = self::data( 'products' );
 		$report['total'] = count( $products );
 
+		// Inventory's new-product defaults would flip manage_stock back on
+		// between our save and the database, turning every made-to-order
+		// drink outofstock. The installer owns stock intent while seeding.
+		add_filter( 'haramara_suppress_inventory_defaults', '__return_true' );
+
 		foreach ( $products as $def ) {
 			$slug = sanitize_title( (string) ( $def['slug'] ?? $def['name'] ?? '' ) );
 			if ( '' === $slug ) {
@@ -330,6 +335,8 @@ final class Installer {
 				++$report['failed'];
 			}
 		}
+
+		remove_filter( 'haramara_suppress_inventory_defaults', '__return_true' );
 
 		return $report;
 	}
