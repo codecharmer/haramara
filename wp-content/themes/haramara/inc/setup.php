@@ -81,3 +81,35 @@ function haramara_body_classes( array $classes ): array {
 	return $classes;
 }
 add_filter( 'body_class', 'haramara_body_classes' );
+
+/**
+ * Serve the brand seal as the site icon when none is set in the admin.
+ *
+ * Once this returns a URL, core emits the full favicon link set itself
+ * (32/192 icons, apple-touch-icon, tile image) on the front end, login and
+ * admin, and answers /favicon.ico requests — no hand-rolled <link> tags.
+ * A real Site Icon uploaded via the admin arrives as a non-empty $url and
+ * wins untouched.
+ *
+ * @param string $url  Site icon URL, empty when no icon is configured.
+ * @param int    $size Requested pixel size.
+ * @return string
+ */
+function haramara_site_icon_fallback( string $url, int $size ): string {
+	if ( '' !== $url ) {
+		return $url;
+	}
+
+	if ( $size <= 32 ) {
+		$file = 'favicon-32.png';
+	} elseif ( $size <= 180 ) {
+		$file = 'apple-touch-icon.png'; // Opaque, padded — Apple crops it to a squircle.
+	} elseif ( $size <= 192 ) {
+		$file = 'favicon-192.png';
+	} else {
+		$file = 'favicon-512.png';
+	}
+
+	return HARAMARA_THEME_URI . '/assets/images/' . $file;
+}
+add_filter( 'get_site_icon_url', 'haramara_site_icon_fallback', 10, 2 );
