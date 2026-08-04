@@ -1,0 +1,68 @@
+<!-- wp:template-part {"slug":"header","area":"header","tagName":"header"} /-->
+
+<!-- wp:group {"tagName":"main","metadata":{"name":"Contenido principal"},"anchor":"hm-main","className":"hm-main hm-product","layout":{"type":"default"}} -->
+<main id="hm-main" class="wp-block-group hm-main hm-product">
+	<!-- wp:group {"className":"hm-product-wrap","layout":{"type":"constrained","wideSize":"1200px"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|lg","bottom":"var:preset|spacing|xxl"},"blockGap":"var:preset|spacing|lg"}}} -->
+	<div class="wp-block-group hm-product-wrap" style="padding-top:var(--wp--preset--spacing--lg);padding-bottom:var(--wp--preset--spacing--xxl)">
+		<!-- wp:woocommerce/breadcrumbs {"fontSize":"sm"} /-->
+		<!-- wp:woocommerce/store-notices /-->
+
+		<!-- wp:columns {"className":"hm-product-layout","style":{"spacing":{"blockGap":{"top":"var:preset|spacing|lg","left":"var:preset|spacing|xl"}}}} -->
+		<div class="wp-block-columns hm-product-layout">
+			<!-- wp:column {"width":"52%"} -->
+			<div class="wp-block-column" style="flex-basis:52%">
+				<!-- wp:woocommerce/product-image-gallery {"className":"is-style-framed"} /-->
+			</div>
+			<!-- /wp:column -->
+
+			<!-- wp:column {"width":"48%","className":"hm-product-summary"} -->
+			<div class="wp-block-column hm-product-summary" style="flex-basis:48%">
+				
+				<!-- wp:post-title {"level":1,"fontSize":"xl"} /-->
+				<!-- wp:woocommerce/product-rating {"fontSize":"sm"} /-->
+				<!-- wp:woocommerce/product-price {"fontSize":"lg"} /-->
+				<!-- wp:woocommerce/product-summary {"fontSize":"base"} /-->
+				<!-- wp:woocommerce/add-to-cart-form /-->
+				<!-- wp:woocommerce/product-meta -->
+					<div class="wp-block-woocommerce-product-meta">
+						<!-- wp:woocommerce/product-sku /-->
+						<!-- wp:woocommerce/product-details-category-list /-->
+						<!-- wp:woocommerce/product-details-tag-list /-->
+					</div>
+				<!-- /wp:woocommerce/product-meta -->
+				<!-- wp:paragraph {"className":"hm-pickup-note","fontSize":"sm","textColor":"smoke"} -->
+				<p class="hm-pickup-note has-smoke-color has-text-color has-sm-font-size">Ordena y recoge en barra. Elige tu horario en el carrito.</p>
+				<!-- /wp:paragraph -->
+			</div>
+			<!-- /wp:column -->
+		</div>
+		<!-- /wp:columns -->
+
+		<!-- wp:woocommerce/product-details {"className":"hm-product-details"} /-->
+	</div>
+	<!-- /wp:group -->
+
+	<!-- wp:group {"className":"hm-related","layout":{"type":"constrained","wideSize":"1200px"},"style":{"spacing":{"padding":{"bottom":"var:preset|spacing|xxl"},"blockGap":"var:preset|spacing|md"}}} -->
+	<div class="wp-block-group hm-related" style="padding-bottom:var(--wp--preset--spacing--xxl)">
+		<!-- wp:heading {"level":2,"fontSize":"lg"} -->
+		<h2 class="wp-block-heading has-lg-font-size">También podría gustarte</h2>
+		<!-- /wp:heading -->
+		<!-- wp:woocommerce/product-collection {"queryId":1,"query":{"perPage":4,"pages":1,"offset":0,"postType":"product","order":"asc","orderBy":"rand","search":"","exclude":[],"inherit":false,"taxQuery":{},"isProductCollectionBlock":true,"featured":false,"woocommerceOnSale":false,"woocommerceStockStatus":["instock"],"woocommerceAttributes":[],"woocommerceHandPickedProducts":[]},"tagName":"div","displayLayout":{"type":"flex","columns":4,"shrinkColumns":true},"dimensions":{"widthType":"fill"},"collection":"woocommerce/product-collection/product-catalog","className":"hm-product-grid"} -->
+		<div class="wp-block-woocommerce-product-collection hm-product-grid">
+			<!-- wp:woocommerce/product-template -->
+				<!-- wp:group {"className":"hm-product-card","layout":{"type":"default"},"style":{"spacing":{"blockGap":"var:preset|spacing|xs"}}} -->
+				<div class="wp-block-group hm-product-card">
+					<!-- wp:woocommerce/product-image {"imageSizing":"thumbnail","showSaleBadge":false,"aspectRatio":"4/5","scale":"cover","isDescendentOfQueryLoop":true} /-->
+					<!-- wp:post-title {"level":3,"isLink":true,"fontSize":"md","__woocommerceNamespace":"woocommerce/product-collection/product-title"} /-->
+					<!-- wp:woocommerce/product-price {"isDescendentOfQueryLoop":true,"fontSize":"base"} /-->
+				</div>
+				<!-- /wp:group -->
+			<!-- /wp:woocommerce/product-template -->
+		</div>
+		<!-- /wp:woocommerce/product-collection -->
+	</div>
+	<!-- /wp:group -->
+</main>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer","area":"footer","tagName":"footer"} /-->

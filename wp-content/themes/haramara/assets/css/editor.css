@@ -1,0 +1,35 @@
+/**
+ * Haramara — editor canvas styles.
+ *
+ * theme.css is also loaded into the editor (see inc/setup.php add_editor_style),
+ * so the block-style looks already mirror the front end. This file only
+ * neutralises runtime-only behaviours that would otherwise hide or misplace
+ * content while editing.
+ *
+ * @package Haramara
+ */
+
+/* Reveal elements must be fully visible while editing. */
+.editor-styles-wrapper .hm-reveal,
+.editor-styles-wrapper .hm-reveal-group > * {
+	opacity: 1 !important;
+	transform: none !important;
+	filter: none !important;
+	animation: none !important;
+}
+
+/* The header is never sticky/fixed inside the canvas. */
+.editor-styles-wrapper header.wp-block-template-part,
+.editor-styles-wrapper .hm-header {
+	position: static !important;
+}
+
+/* The transparent header needs its noche ground inside the canvas. */
+.editor-styles-wrapper .hm-header--transparent {
+	background: var(--wp--preset--color--noche);
+}
+
+/* The daylight veil is a runtime effect; never paint it in the canvas. */
+.editor-styles-wrapper body::after {
+	display: none;
+}

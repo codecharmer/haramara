@@ -1,0 +1,59 @@
+<!-- wp:template-part {"slug":"header","area":"header","tagName":"header"} /-->
+
+<!-- wp:group {"tagName":"main","metadata":{"name":"Contenido principal"},"anchor":"hm-main","className":"hm-main hm-checkout","layout":{"type":"default"}} -->
+<main id="hm-main" class="wp-block-group hm-main hm-checkout">
+	<!-- wp:group {"className":"hm-checkout-wrap","layout":{"type":"constrained","wideSize":"1200px"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|lg","bottom":"var:preset|spacing|xxl"},"blockGap":"var:preset|spacing|md"}}} -->
+	<div class="wp-block-group hm-checkout-wrap" style="padding-top:var(--wp--preset--spacing--lg);padding-bottom:var(--wp--preset--spacing--xxl)">
+		<!-- wp:group {"className":"hm-head","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+		<div class="wp-block-group hm-head">
+			<!-- wp:heading {"level":1,"fontSize":"xxl"} -->
+			<h1 class="wp-block-heading has-xxl-font-size">Finalizar pedido</h1>
+			<!-- /wp:heading -->
+			<!-- wp:paragraph {"className":"hm-lead","fontSize":"base","textColor":"limestone","style":{"spacing":{"margin":{"top":"var:preset|spacing|sm"}}}} -->
+			<p class="hm-lead has-limestone-color has-text-color has-base-font-size" style="margin-top:var(--wp--preset--spacing--sm)">Ordena y recoge en barra. Elige tu horario de recogida antes de pagar.</p>
+			<!-- /wp:paragraph -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:woocommerce/checkout -->
+		<div class="wp-block-woocommerce-checkout alignwide wc-block-checkout is-loading">
+			<!-- wp:woocommerce/checkout-fields-block -->
+			<div class="wp-block-woocommerce-checkout-fields-block">
+				<!-- wp:woocommerce/checkout-express-payment-block /-->
+				<!-- wp:woocommerce/checkout-contact-information-block /-->
+				<!-- wp:woocommerce/checkout-shipping-method-block /-->
+				<!-- wp:woocommerce/checkout-pickup-options-block /-->
+				<!-- wp:woocommerce/checkout-shipping-address-block /-->
+				<!-- wp:woocommerce/checkout-billing-address-block /-->
+				<!-- wp:woocommerce/checkout-shipping-methods-block /-->
+				<!-- wp:woocommerce/checkout-payment-block /-->
+				<!-- wp:woocommerce/checkout-additional-information-block /-->
+				<!-- wp:woocommerce/checkout-order-note-block /-->
+				<!-- wp:woocommerce/checkout-terms-block /-->
+				<!-- wp:woocommerce/checkout-actions-block /-->
+			</div>
+			<!-- /wp:woocommerce/checkout-fields-block -->
+
+			<!-- wp:woocommerce/checkout-totals-block -->
+			<div class="wp-block-woocommerce-checkout-totals-block">
+				<!-- wp:woocommerce/checkout-order-summary-block -->
+				<div class="wp-block-woocommerce-checkout-order-summary-block">
+					<!-- wp:woocommerce/checkout-order-summary-cart-items-block /-->
+					<!-- wp:woocommerce/checkout-order-summary-coupon-form-block /-->
+					<!-- wp:woocommerce/checkout-order-summary-subtotal-block /-->
+					<!-- wp:woocommerce/checkout-order-summary-fee-block /-->
+					<!-- wp:woocommerce/checkout-order-summary-discount-block /-->
+					<!-- wp:woocommerce/checkout-order-summary-shipping-block /-->
+					<!-- wp:woocommerce/checkout-order-summary-taxes-block /-->
+				</div>
+				<!-- /wp:woocommerce/checkout-order-summary-block -->
+			</div>
+			<!-- /wp:woocommerce/checkout-totals-block -->
+		</div>
+		<!-- /wp:woocommerce/checkout -->
+	</div>
+	<!-- /wp:group -->
+</main>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer-minimal","area":"footer","tagName":"footer"} /-->

@@ -1,0 +1,230 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/theme.json",
+	"version": 3,
+	"settings": {
+		"appearanceTools": true,
+		"useRootPaddingAwareAlignments": true,
+		"layout": {
+			"contentSize": "700px",
+			"wideSize": "1240px"
+		},
+		"color": {
+			"defaultPalette": false,
+			"defaultGradients": false,
+			"defaultDuotone": false,
+			"custom": true,
+			"customGradient": true,
+			"palette": [
+				{ "slug": "carbon", "name": "Carbón", "color": "#131110" },
+				{ "slug": "alba", "name": "Alba", "color": "#16191B" },
+				{ "slug": "char", "name": "Madera quemada", "color": "#1D1916" },
+				{ "slug": "espresso", "name": "Espresso", "color": "#241D17" },
+				{ "slug": "ocaso", "name": "Ocaso", "color": "#221A11" },
+				{ "slug": "noche", "name": "Noche", "color": "#0D0C0A" },
+				{ "slug": "walnut", "name": "Nogal", "color": "#433326" },
+				{ "slug": "smoke", "name": "Humo", "color": "#A29888" },
+				{ "slug": "limestone", "name": "Caliza", "color": "#D6CCBD" },
+				{ "slug": "bone", "name": "Hueso", "color": "#EFE8DC" },
+				{ "slug": "clay", "name": "Barro", "color": "#C98F6B" },
+				{ "slug": "olive", "name": "Oliva", "color": "#9B9B79" },
+				{ "slug": "brass", "name": "Latón", "color": "#C8A566" },
+				{ "slug": "brass-soft", "name": "Latón claro", "color": "#E0C48D" }
+			],
+			"gradients": [
+				{ "slug": "scrim-foto", "name": "Velo fotográfico", "gradient": "linear-gradient(180deg, rgba(13,12,10,0.10) 0%, rgba(13,12,10,0.28) 46%, rgba(13,12,10,0.86) 100%)" },
+				{ "slug": "scrim-lateral", "name": "Velo lateral", "gradient": "linear-gradient(96deg, rgba(13,12,10,0.86) 0%, rgba(13,12,10,0.55) 38%, rgba(13,12,10,0.18) 66%, rgba(13,12,10,0.02) 90%)" },
+				{ "slug": "vela", "name": "Luz de vela", "gradient": "radial-gradient(120% 85% at 50% 100%, rgba(200,165,102,0.14) 0%, rgba(200,165,102,0.05) 38%, rgba(200,165,102,0) 62%)" },
+				{ "slug": "alba-fade", "name": "Alba a carbón", "gradient": "linear-gradient(180deg, #16191B 0%, #131110 100%)" },
+				{ "slug": "ocaso-fade", "name": "Ocaso a noche", "gradient": "linear-gradient(180deg, #221A11 0%, #0D0C0A 100%)" }
+			]
+		},
+		"typography": {
+			"fluid": true,
+			"defaultFontSizes": false,
+			"customFontSize": true,
+			"fontFamilies": [
+				{
+					"slug": "display",
+					"name": "Italiana (Display)",
+					"fontFamily": "Italiana, \"Times New Roman\", Didot, serif",
+					"fontFace": [
+						{
+							"fontFamily": "Italiana",
+							"fontWeight": "400",
+							"fontStyle": "normal",
+							"fontStretch": "normal",
+							"fontDisplay": "swap",
+							"src": [ "file:./assets/fonts/Italiana-Regular.woff2" ]
+						}
+					]
+				},
+				{
+					"slug": "body",
+					"name": "Petrona (Texto)",
+					"fontFamily": "Petrona, Georgia, \"Times New Roman\", serif",
+					"fontFace": [
+						{
+							"fontFamily": "Petrona",
+							"fontWeight": "100 900",
+							"fontStyle": "normal",
+							"fontStretch": "normal",
+							"fontDisplay": "swap",
+							"src": [ "file:./assets/fonts/Petrona-Roman.woff2" ]
+						},
+						{
+							"fontFamily": "Petrona",
+							"fontWeight": "100 900",
+							"fontStyle": "italic",
+							"fontStretch": "normal",
+							"fontDisplay": "swap",
+							"src": [ "file:./assets/fonts/Petrona-Italic.woff2" ]
+						}
+					]
+				}
+			],
+			"fontSizes": [
+				{ "slug": "sm", "name": "Small", "size": "0.875rem", "fluid": { "min": "0.8125rem", "max": "0.875rem" } },
+				{ "slug": "base", "name": "Base", "size": "1.59375rem", "fluid": { "min": "1.5rem", "max": "1.59375rem" } },
+				{ "slug": "md", "name": "Medium", "size": "1.3125rem", "fluid": { "min": "1.1875rem", "max": "1.3125rem" } },
+				{ "slug": "lg", "name": "Large", "size": "1.75rem", "fluid": { "min": "1.5rem", "max": "1.75rem" } },
+				{ "slug": "xl", "name": "XL", "size": "2.5rem", "fluid": { "min": "2rem", "max": "2.5rem" } },
+				{ "slug": "xxl", "name": "2XL", "size": "3.5rem", "fluid": { "min": "2.5rem", "max": "3.5rem" } },
+				{ "slug": "xxxl", "name": "3XL", "size": "4.5rem", "fluid": { "min": "2.875rem", "max": "4.5rem" } },
+				{ "slug": "display", "name": "Display", "size": "6rem", "fluid": { "min": "3.25rem", "max": "6rem" } }
+			]
+		},
+		"spacing": {
+			"defaultSpacingSizes": false,
+			"customSpacingSize": true,
+			"units": [ "px", "em", "rem", "vh", "vw", "%", "svh" ],
+			"spacingSizes": [
+				{ "slug": "xxxs", "name": "3XS", "size": "0.25rem" },
+				{ "slug": "xxs", "name": "2XS", "size": "0.5rem" },
+				{ "slug": "xs", "name": "XS", "size": "0.75rem" },
+				{ "slug": "sm", "name": "S", "size": "1rem" },
+				{ "slug": "md", "name": "M", "size": "1.5rem" },
+				{ "slug": "lg", "name": "L", "size": "2.5rem" },
+				{ "slug": "xl", "name": "XL", "size": "4rem" },
+				{ "slug": "xxl", "name": "2XL", "size": "6.5rem" },
+				{ "slug": "xxxl", "name": "3XL", "size": "10rem" }
+			]
+		},
+		"border": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true
+		},
+		"shadow": {
+			"defaultPresets": false,
+			"presets": [
+				{ "slug": "abismo", "name": "Abismo", "shadow": "0 34px 70px -30px rgba(0,0,0,0.72)" },
+				{ "slug": "brasa", "name": "Brasa", "shadow": "0 18px 60px -24px rgba(200,165,102,0.28)" },
+				{ "slug": "filete", "name": "Filete hueso", "shadow": "inset 0 0 0 1px rgba(239,232,220,0.14)" }
+			]
+		},
+		"dimensions": { "minHeight": true, "aspectRatio": true },
+		"background": { "backgroundImage": true, "backgroundSize": true },
+		"custom": {
+			"radius": { "sm": "0px", "md": "0px", "lg": "0px", "pill": "999px" },
+			"measure": "64ch",
+			"hairline": "rgba(239,232,220,0.14)",
+			"hairlineStrong": "rgba(239,232,220,0.26)",
+			"duration": { "fast": "200ms", "base": "450ms", "slow": "900ms" },
+			"easing": { "standard": "cubic-bezier(0.16, 1, 0.3, 1)" }
+		}
+	},
+	"styles": {
+		"color": { "background": "var(--wp--preset--color--carbon)", "text": "var(--wp--preset--color--limestone)" },
+		"typography": {
+			"fontFamily": "var(--wp--preset--font-family--body)",
+			"fontSize": "var(--wp--preset--font-size--base)",
+			"fontWeight": "380",
+			"lineHeight": "1.65",
+			"letterSpacing": "0.005em"
+		},
+		"spacing": {
+			"blockGap": "var(--wp--preset--spacing--md)",
+			"padding": {
+				"top": "0",
+				"bottom": "0",
+				"left": "var(--wp--preset--spacing--md)",
+				"right": "var(--wp--preset--spacing--md)"
+			}
+		},
+		"elements": {
+			"heading": {
+				"typography": {
+					"fontFamily": "var(--wp--preset--font-family--display)",
+					"fontWeight": "500",
+					"lineHeight": "1.06",
+					"letterSpacing": "0.015em"
+				},
+				"color": { "text": "var(--wp--preset--color--bone)" }
+			},
+			"h1": { "typography": { "fontSize": "var(--wp--preset--font-size--xxxl)" } },
+			"h2": { "typography": { "fontSize": "var(--wp--preset--font-size--xxl)" } },
+			"h3": { "typography": { "fontSize": "var(--wp--preset--font-size--xl)" } },
+			"h4": { "typography": { "fontSize": "var(--wp--preset--font-size--lg)" } },
+			"link": {
+				"color": { "text": "var(--wp--preset--color--limestone)" },
+				":hover": { "color": { "text": "var(--wp--preset--color--brass-soft)" } },
+				":focus": { "color": { "text": "var(--wp--preset--color--brass-soft)" } }
+			},
+			"button": {
+				"border": { "radius": "0px", "width": "1px", "style": "solid", "color": "var(--wp--preset--color--brass)" },
+				"color": { "background": "transparent", "text": "var(--wp--preset--color--brass)" },
+				"typography": {
+					"fontFamily": "var(--wp--preset--font-family--body)",
+					"fontWeight": "500",
+					"fontSize": "var(--wp--preset--font-size--sm)",
+					"letterSpacing": "0.18em",
+					"textTransform": "uppercase"
+				},
+				"spacing": { "padding": { "top": "0.95rem", "bottom": "0.95rem", "left": "1.9rem", "right": "1.9rem" } },
+				":hover": { "color": { "background": "var(--wp--preset--color--brass)", "text": "var(--wp--preset--color--noche)" } },
+				":focus": { "color": { "background": "var(--wp--preset--color--brass)", "text": "var(--wp--preset--color--noche)" } },
+				":active": { "color": { "background": "var(--wp--preset--color--brass-soft)", "text": "var(--wp--preset--color--noche)" } }
+			},
+			"caption": { "typography": { "fontSize": "var(--wp--preset--font-size--sm)" }, "color": { "text": "var(--wp--preset--color--smoke)" } },
+			"cite": { "typography": { "fontStyle": "normal", "fontSize": "var(--wp--preset--font-size--sm)" }, "color": { "text": "var(--wp--preset--color--smoke)" } }
+		},
+		"blocks": {
+			"core/site-title": {
+				"typography": {
+					"fontFamily": "var(--wp--preset--font-family--display)",
+					"fontWeight": "500",
+					"fontSize": "1.25rem",
+					"textTransform": "uppercase",
+					"letterSpacing": "0.32em"
+				},
+				"color": { "text": "var(--wp--preset--color--bone)" }
+			},
+			"core/post-title": { "typography": { "fontSize": "var(--wp--preset--font-size--xxl)" } },
+			"core/pullquote": {
+				"typography": { "fontFamily": "var(--wp--preset--font-family--body)", "fontStyle": "italic", "fontWeight": "340", "fontSize": "var(--wp--preset--font-size--lg)" },
+				"border": { "top": { "width": "0px" }, "bottom": { "width": "0px" } }
+			},
+			"core/quote": {
+				"typography": { "fontFamily": "var(--wp--preset--font-family--body)", "fontStyle": "italic", "fontWeight": "340" },
+				"border": { "left": { "color": "var(--wp--preset--color--walnut)", "width": "1px" } }
+			},
+			"core/separator": {
+				"color": { "text": "var(--wp--preset--color--walnut)" },
+				"border": { "color": "var(--wp--preset--color--walnut)" }
+			},
+			"core/list": { "spacing": { "padding": { "left": "1.25rem" } } }
+		}
+	},
+	"customTemplates": [
+		{ "name": "page-no-title", "title": "Página sin título", "postTypes": [ "page" ] },
+		{ "name": "page-wide", "title": "Página ancha", "postTypes": [ "page" ] },
+		{ "name": "template-thank-you", "title": "Gracias por tu pedido", "postTypes": [ "page" ] }
+	],
+	"templateParts": [
+		{ "name": "header", "title": "Encabezado", "area": "header" },
+		{ "name": "header-transparent", "title": "Encabezado transparente", "area": "header" },
+		{ "name": "footer", "title": "Pie de página", "area": "footer" },
+		{ "name": "footer-minimal", "title": "Pie de página mínimo", "area": "footer" }
+	]
+}

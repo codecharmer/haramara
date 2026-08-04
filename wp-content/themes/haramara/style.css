@@ -1,0 +1,22 @@
+/*!
+Theme Name: Haramara
+Theme URI: https://haramara.mx/
+Author: Haramara Café
+Author URI: https://www.instagram.com/haramara.cafe/
+Description: Block theme for Haramara — a specialty coffee and sourdough bar hidden in Cuernavaca. Matte black, charred wood and limestone; candlelight photography; Italiana display over Petrona text. The theme is presentation only — commerce, ordering and business data live in the haramara-core plugin.
+Requires at least: 6.8
+Tested up to: 6.9
+Requires PHP: 8.3
+Version: 1.0.0
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: haramara
+Tags: full-site-editing, block-patterns, block-styles, e-commerce, custom-colors, custom-logo, editor-style, featured-images, translation-ready, accessibility-ready
+*/
+
+/*
+ * Design tokens live in theme.json and are emitted as --wp--preset--* / --wp--custom--* vars.
+ * Runtime styles that are impractical in theme.json (animations, complex layout,
+ * WooCommerce overrides) live in assets/css/*.css, enqueued from functions.php.
+ * This file intentionally holds only the required theme header.
+ */

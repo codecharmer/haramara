@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="800" viewBox="0 0 1200 800" role="img" aria-label="Laminado Gouda — imagen pendiente">
+  <rect width="1200" height="800" fill="#131110"/>
+  <rect x="48" y="48" width="1104" height="704" fill="#1D1916" stroke="#433326" stroke-width="2"/>
+  <circle cx="600" cy="210" r="52" fill="none" stroke="#C8A566" stroke-width="4"/>
+  <path d="M600 168 q-26 34 -13 55 q6 11 13 13 q7 -2 13 -13 q13 -21 -13 -55 Z" fill="#C8A566"/>
+  <text x="600" y="330" text-anchor="middle" font-family="Georgia, serif" font-size="30" letter-spacing="12" fill="#A29888">HARAMARA</text>
+  <text x="600" y="460" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-size="58" font-style="italic" fill="#EFE8DC">Laminado Gouda</text>
+  <text x="600" y="620" text-anchor="middle" font-family="Georgia, serif" font-size="22" letter-spacing="6" fill="#A29888">IMAGEN PENDIENTE &#183; CAF&#201;. FUEGO. RITUAL.</text>
+  <text x="600" y="700" text-anchor="middle" font-family="Georgia, serif" font-size="18" fill="#9B9B79">Coloca la foto real en data/media/source/laminado-gouda.jpg</text>
+</svg>

@@ -1,0 +1,38 @@
+{
+	"$schema": "https://raw.githubusercontent.com/WordPress/gutenberg/trunk/schemas/json/wp-env.json",
+	"core": null,
+	"phpVersion": "8.3",
+	"plugins": [
+		"./wp-content/plugins/woocommerce",
+		"./wp-content/plugins/woocommerce-gateway-stripe",
+		"./wp-content/plugins/restricted-site-access",
+		"./wp-content/plugins/haramara-core"
+	],
+	"themes": [
+		"./wp-content/themes/haramara"
+	],
+	"mappings": {
+		"wp-content/plugins/haramara-core": "./wp-content/plugins/haramara-core",
+		"wp-content/themes/haramara": "./wp-content/themes/haramara"
+	},
+	"config": {
+		"WP_DEBUG": true,
+		"WP_DEBUG_LOG": true,
+		"WP_DEBUG_DISPLAY": false,
+		"SCRIPT_DEBUG": true,
+		"WP_ENVIRONMENT_TYPE": "local"
+	},
+	"lifecycleScripts": {
+		"afterStart": "echo '[haramara] wp-env is up. Activate WooCommerce, the Haramara theme and Haramara Core, then seed demo content with:  wp-env run cli wp haramara install   .'"
+	},
+	"env": {
+		"tests": {
+			"config": {
+				"WP_DEBUG": true,
+				"SCRIPT_DEBUG": true
+			}
+		}
+	},
+	"port": 8892,
+	"testsPort": 8893
+}

@@ -1,0 +1,516 @@
+/**
+ * Haramara — admin operations styling.
+ *
+ * Warm, calm surface consistent with the "Horno & Trigo" brand palette, layered
+ * over WordPress admin conventions rather than fighting them. Scoped to Haramara
+ * screens via the .haramara-wrap root class.
+ */
+
+.haramara-wrap {
+	--pf-masa: #f6efe4;
+	--pf-masa-deep: #ede3d2;
+	--pf-linen: #fbf7f0;
+	--pf-crust: #2e2016;
+	--pf-crust-soft: #4a3626;
+	--pf-clay: #b4643f;
+	--pf-clay-deep: #8f4a2c;
+	--pf-olivo: #6e6b4a;
+	--pf-trigo: #d8a44a;
+	--pf-stone: #9a8e7c;
+	--pf-border: #e2d6c2;
+	--pf-radius: 10px;
+	--pf-shadow-soft: 0 2px 8px rgba(28, 20, 13, 0.06);
+	--pf-shadow-lift: 0 16px 40px -18px rgba(46, 32, 22, 0.28);
+	color: var(--pf-crust-soft);
+}
+
+.haramara-title {
+	display: flex;
+	align-items: center;
+	gap: 0.4em;
+}
+
+.haramara-title .dashicons {
+	color: var(--pf-clay);
+	font-size: 26px;
+	width: 26px;
+	height: 26px;
+}
+
+.haramara-subtitle {
+	margin: 0 0 1.25em;
+	color: var(--pf-stone);
+	font-size: 13px;
+}
+
+/* --- Stat cards ------------------------------------------------------------ */
+
+.haramara-cards {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+	gap: 16px;
+	margin: 1em 0 1.5em;
+}
+
+.haramara-card {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 18px 20px;
+	background: var(--pf-linen);
+	border: 1px solid var(--pf-border);
+	border-radius: var(--pf-radius);
+	box-shadow: var(--pf-shadow-soft);
+	position: relative;
+	overflow: hidden;
+}
+
+.haramara-card .dashicons {
+	position: absolute;
+	top: 14px;
+	right: 14px;
+	color: var(--pf-masa-deep);
+	font-size: 34px;
+	width: 34px;
+	height: 34px;
+}
+
+.haramara-card__value {
+	font-size: 30px;
+	font-weight: 700;
+	line-height: 1.1;
+	color: var(--pf-crust);
+}
+
+.haramara-card__label {
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: var(--pf-stone);
+}
+
+.haramara-card.is-attention {
+	border-left: 4px solid var(--pf-clay);
+}
+
+.haramara-card.is-good {
+	border-left: 4px solid var(--pf-olivo);
+}
+
+/* --- Panels / grid --------------------------------------------------------- */
+
+.haramara-grid {
+	display: grid;
+	grid-template-columns: 2fr 1fr;
+	gap: 16px;
+	align-items: start;
+}
+
+.haramara-panel {
+	background: var(--pf-linen);
+	border: 1px solid var(--pf-border);
+	border-radius: var(--pf-radius);
+	box-shadow: var(--pf-shadow-soft);
+	padding: 18px 20px;
+	margin-bottom: 16px;
+}
+
+.haramara-panel--wide {
+	grid-column: 1 / -1;
+}
+
+.haramara-panel__title {
+	margin: 0 0 0.75em;
+	font-size: 15px;
+	color: var(--pf-crust);
+	border-bottom: 1px solid var(--pf-border);
+	padding-bottom: 0.5em;
+}
+
+@media (max-width: 960px) {
+	.haramara-grid {
+		grid-template-columns: 1fr;
+	}
+}
+
+.haramara-empty {
+	color: var(--pf-stone);
+	font-style: italic;
+	margin: 0.5em 0;
+}
+
+/* --- Tables ---------------------------------------------------------------- */
+
+.haramara-table {
+	border-radius: var(--pf-radius);
+	overflow: hidden;
+}
+
+.haramara-table thead th {
+	background: var(--pf-masa);
+	color: var(--pf-crust-soft);
+	font-weight: 600;
+}
+
+.haramara-col-actions {
+	white-space: nowrap;
+}
+
+.haramara-status {
+	display: inline-block;
+	padding: 2px 8px;
+	border-radius: 999px;
+	font-size: 11px;
+	font-weight: 600;
+	background: var(--pf-masa-deep);
+	color: var(--pf-crust-soft);
+}
+
+.haramara-status--ready,
+.haramara-status--completed {
+	background: #e2ead2;
+	color: #40521f;
+}
+
+.haramara-status--queued,
+.haramara-status--preparing,
+.haramara-status--processing {
+	background: #f3e0cf;
+	color: var(--pf-clay-deep);
+}
+
+.haramara-list {
+	margin: 0;
+}
+
+.haramara-list li {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 6px 0;
+	border-bottom: 1px solid var(--pf-border);
+}
+
+.haramara-list li:last-child {
+	border-bottom: 0;
+}
+
+.haramara-badge {
+	background: var(--pf-trigo);
+	color: var(--pf-crust);
+	border-radius: 999px;
+	padding: 1px 9px;
+	font-size: 11px;
+	font-weight: 700;
+}
+
+.haramara-quick-action {
+	margin-bottom: 2px !important;
+}
+
+.haramara-quick-action.is-busy {
+	opacity: 0.6;
+	pointer-events: none;
+}
+
+/* --- Reports --------------------------------------------------------------- */
+
+.haramara-tabs {
+	display: flex;
+	gap: 4px;
+	margin: 0 0 1.25em;
+	flex-wrap: wrap;
+}
+
+.haramara-range-tab {
+	padding: 6px 14px;
+	border-radius: 999px;
+	text-decoration: none;
+	color: var(--pf-crust-soft);
+	background: var(--pf-masa-deep);
+	font-size: 13px;
+}
+
+.haramara-range-tab.is-active {
+	background: var(--pf-clay);
+	color: #fff;
+}
+
+.haramara-chart {
+	width: 100%;
+	overflow-x: auto;
+}
+
+.haramara-chart svg {
+	width: 100%;
+	height: auto;
+	min-width: 320px;
+}
+
+.haramara-bar {
+	fill: var(--pf-clay);
+	transition: fill 160ms ease;
+}
+
+.haramara-bar:hover {
+	fill: var(--pf-clay-deep);
+}
+
+.haramara-bar-label {
+	fill: var(--pf-stone);
+	font-size: 10px;
+}
+
+/* --- Production calendar ---------------------------------------------------- */
+
+.haramara-toolbar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 1em 0 1.5em;
+	flex-wrap: wrap;
+}
+
+.haramara-range {
+	color: var(--pf-crust);
+	font-weight: 600;
+	margin-left: auto;
+}
+
+.haramara-calendar__grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+	gap: 16px;
+}
+
+.haramara-day {
+	background: var(--pf-linen);
+	border: 1px solid var(--pf-border);
+	border-radius: var(--pf-radius);
+	box-shadow: var(--pf-shadow-soft);
+	padding: 16px;
+	break-inside: avoid;
+}
+
+.haramara-day__head {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	border-bottom: 2px solid var(--pf-clay);
+	padding-bottom: 8px;
+	margin-bottom: 10px;
+}
+
+.haramara-day__head h2 {
+	margin: 0;
+	font-size: 15px;
+	color: var(--pf-crust);
+}
+
+.haramara-day__count {
+	font-size: 12px;
+	color: var(--pf-stone);
+}
+
+.haramara-day__totals h3,
+.haramara-slot__time {
+	font-size: 12px;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--pf-olivo);
+	margin: 12px 0 6px;
+}
+
+.haramara-bake-list {
+	margin: 0 0 10px;
+	padding: 10px 12px;
+	background: var(--pf-masa);
+	border-radius: 8px;
+}
+
+.haramara-bake-list li {
+	margin: 2px 0;
+}
+
+.haramara-qty {
+	font-weight: 700;
+	color: var(--pf-clay-deep);
+}
+
+.haramara-slot {
+	border-top: 1px dashed var(--pf-border);
+	padding-top: 6px;
+}
+
+.haramara-slot__orders {
+	margin: 0;
+}
+
+.haramara-slot__orders li {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	font-size: 12px;
+	padding: 4px 0;
+}
+
+.haramara-slot__order {
+	font-weight: 700;
+	color: var(--pf-crust);
+}
+
+.haramara-slot__customer {
+	color: var(--pf-crust-soft);
+}
+
+.haramara-slot__items {
+	color: var(--pf-stone);
+	flex-basis: 100%;
+}
+
+/* --- Settings -------------------------------------------------------------- */
+
+.haramara-settings__tabs {
+	margin-bottom: 1.25em;
+}
+
+.haramara-inline-check {
+	display: inline-block;
+	margin-right: 14px;
+	white-space: nowrap;
+}
+
+.haramara-repeatable__row {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin-bottom: 6px;
+}
+
+.haramara-repeatable-remove {
+	color: var(--pf-clay-deep) !important;
+	font-size: 18px;
+	line-height: 1;
+	text-decoration: none;
+}
+
+.haramara-reply-map {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.haramara-reply-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.haramara-reply-key {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	border-radius: 6px;
+	background: var(--pf-clay);
+	color: #fff;
+	font-weight: 700;
+}
+
+.haramara-const-note {
+	color: var(--pf-olivo);
+}
+
+.haramara-const-note .dashicons {
+	font-size: 16px;
+	width: 16px;
+	height: 16px;
+	vertical-align: text-bottom;
+}
+
+.haramara-media__preview {
+	display: block;
+	max-width: 120px;
+	height: auto;
+	border-radius: 8px;
+	border: 1px solid var(--pf-border);
+	margin-bottom: 6px;
+}
+
+.haramara-tools {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+	gap: 16px;
+	margin-top: 1em;
+}
+
+.haramara-tool {
+	background: var(--pf-linen);
+	border: 1px solid var(--pf-border);
+	border-radius: var(--pf-radius);
+	padding: 18px 20px;
+	box-shadow: var(--pf-shadow-soft);
+}
+
+.haramara-tool h3 {
+	margin-top: 0;
+	color: var(--pf-crust);
+}
+
+.haramara-test-sms-result {
+	min-height: 1.4em;
+	font-weight: 600;
+}
+
+.haramara-test-sms-result.is-success {
+	color: #40521f;
+}
+
+.haramara-test-sms-result.is-error {
+	color: var(--pf-clay-deep);
+}
+
+/* --- Print (production calendar) ------------------------------------------- */
+
+.haramara-print-only {
+	display: none;
+}
+
+@media print {
+	#adminmenumain,
+	#wpadminbar,
+	#wpfooter,
+	.haramara-no-print,
+	.notice,
+	.update-nag {
+		display: none !important;
+	}
+
+	#wpcontent,
+	#wpbody-content {
+		margin: 0 !important;
+		padding: 0 !important;
+	}
+
+	.haramara-print-only {
+		display: block;
+	}
+
+	.haramara-print-head {
+		display: flex;
+		justify-content: space-between;
+		margin-bottom: 12px;
+		font-size: 14px;
+	}
+
+	.haramara-day,
+	.haramara-panel {
+		box-shadow: none;
+		border-color: #999;
+	}
+
+	.haramara-calendar__grid {
+		grid-template-columns: repeat(2, 1fr);
+	}
+}

@@ -1,0 +1,72 @@
+<!-- wp:template-part {"slug":"header","area":"header","tagName":"header"} /-->
+
+<!-- wp:group {"tagName":"main","metadata":{"name":"Contenido principal"},"anchor":"hm-main","className":"hm-main hm-cart","layout":{"type":"default"}} -->
+<main id="hm-main" class="wp-block-group hm-main hm-cart">
+	<!-- wp:group {"className":"hm-cart-wrap","layout":{"type":"constrained","wideSize":"1200px"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|lg","bottom":"var:preset|spacing|xxl"},"blockGap":"var:preset|spacing|md"}}} -->
+	<div class="wp-block-group hm-cart-wrap" style="padding-top:var(--wp--preset--spacing--lg);padding-bottom:var(--wp--preset--spacing--xxl)">
+		<!-- wp:group {"className":"hm-head","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+		<div class="wp-block-group hm-head">
+			<!-- wp:heading {"level":1,"fontSize":"xxl"} -->
+			<h1 class="wp-block-heading has-xxl-font-size">Tu carrito</h1>
+			<!-- /wp:heading -->
+		</div>
+		<!-- /wp:group -->
+
+		<!-- wp:woocommerce/cart -->
+		<div class="wp-block-woocommerce-cart alignwide is-loading">
+			<!-- wp:woocommerce/filled-cart-block -->
+			<div class="wp-block-woocommerce-filled-cart-block">
+				<!-- wp:woocommerce/cart-items-block -->
+				<div class="wp-block-woocommerce-cart-items-block">
+					<!-- wp:woocommerce/cart-line-items-block -->
+					<div class="wp-block-woocommerce-cart-line-items-block"></div>
+					<!-- /wp:woocommerce/cart-line-items-block -->
+				</div>
+				<!-- /wp:woocommerce/cart-items-block -->
+
+				<!-- wp:woocommerce/cart-totals-block -->
+				<div class="wp-block-woocommerce-cart-totals-block">
+					<!-- wp:woocommerce/cart-order-summary-block -->
+					<div class="wp-block-woocommerce-cart-order-summary-block">
+						<!-- wp:woocommerce/cart-order-summary-heading-block /-->
+						<!-- wp:woocommerce/cart-order-summary-coupon-form-block /-->
+						<!-- wp:woocommerce/cart-order-summary-subtotal-block /-->
+						<!-- wp:woocommerce/cart-order-summary-fee-block /-->
+						<!-- wp:woocommerce/cart-order-summary-discount-block /-->
+						<!-- wp:woocommerce/cart-order-summary-shipping-block /-->
+						<!-- wp:woocommerce/cart-order-summary-taxes-block /-->
+					</div>
+					<!-- /wp:woocommerce/cart-order-summary-block -->
+
+					<!-- wp:woocommerce/proceed-to-checkout-block /-->
+					<!-- wp:woocommerce/cart-accepted-payment-methods-block /-->
+				</div>
+				<!-- /wp:woocommerce/cart-totals-block -->
+			</div>
+			<!-- /wp:woocommerce/filled-cart-block -->
+
+			<!-- wp:woocommerce/empty-cart-block -->
+			<div class="wp-block-woocommerce-empty-cart-block">
+				<!-- wp:heading {"textAlign":"center","level":2,"fontSize":"lg"} -->
+				<h2 class="wp-block-heading has-text-align-center has-lg-font-size">Tu carrito está vacío</h2>
+				<!-- /wp:heading -->
+				<!-- wp:paragraph {"align":"center","textColor":"limestone"} -->
+				<p class="has-text-align-center has-limestone-color has-text-color">Aún no has agregado nada. Explora la carta: café, laminados y masa madre.</p>
+				<!-- /wp:paragraph -->
+				<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center"}} -->
+				<div class="wp-block-buttons">
+					<!-- wp:button -->
+					<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/carta">Explorar la carta</a></div>
+					<!-- /wp:button -->
+				</div>
+				<!-- /wp:buttons -->
+			</div>
+			<!-- /wp:woocommerce/empty-cart-block -->
+		</div>
+		<!-- /wp:woocommerce/cart -->
+	</div>
+	<!-- /wp:group -->
+</main>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer","area":"footer","tagName":"footer"} /-->

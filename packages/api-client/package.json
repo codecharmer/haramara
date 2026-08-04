@@ -1,0 +1,14 @@
+{
+  "name": "@haramara/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Typed fetch client for the Haramara WordPress APIs (haramara/v1 + WooCommerce Store API). Pure fetch — usable from Expo apps and Node.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "~6.0.3"
+  }
+}

@@ -1,0 +1,58 @@
+# === Dependencies (managed by npm / Composer) ===
+node_modules/
+vendor/
+
+# === Build artifacts from @wordpress/scripts ===
+wp-content/themes/haramara/assets/build/
+build/
+
+# === Minified/generated variants (source of truth is the unminified file) ===
+*.min.css
+*.min.js
+*.min.css.map
+*.min.js.map
+*.map
+
+# === Local dev (@wordpress/env) ===
+.wp-env.override.json
+
+# === Secrets / local config — never commit ===
+.env
+.env.*
+!.env.example
+wp-config-local.php
+*.local.php
+
+# === OS / editor cruft ===
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# === Logs & caches ===
+*.log
+.phpunit.result.cache
+.phpcs.cache
+.phpstan.cache
+
+# ---------------------------------------------------------------------------
+# INTENTIONALLY TRACKED (do NOT ignore):
+#   - wp-content/themes/haramara/assets/css/*.css   (hand-authored runtime CSS)
+#   - wp-content/themes/haramara/assets/js/*.js     (hand-authored JS)
+#   - wp-content/plugins/haramara-core/data/media/source/**  (media importer targets)
+# ---------------------------------------------------------------------------
+
+# === WordPress plugins are Composer-managed (wpackagist) ===
+# Reproduce with `composer install`. composer.json + composer.lock are the source
+# of truth; installed plugin directories are build output and are NOT committed.
+# Our own plugin (haramara-core) IS source, so it stays tracked.
+wp-content/plugins/*/
+!wp-content/plugins/haramara-core/
+
+# === Expo apps ===
+.expo/
+apps/*/dist/
