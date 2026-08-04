@@ -126,8 +126,8 @@ body::after {
  * The raster ships without alpha (square black corners), so the circular
  * clip is load-bearing, not just the seal's sanctioned shape. */
 .hm-brand__mark {
-	width: 2.125rem;
-	height: 2.125rem;
+	width: 3.1875rem;
+	height: 3.1875rem;
 	border-radius: 50%;
 	box-shadow: 0 0 0 1px rgba(200, 165, 102, 0.35);
 }

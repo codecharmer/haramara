@@ -194,7 +194,7 @@
 				"typography": {
 					"fontFamily": "var(--wp--preset--font-family--display)",
 					"fontWeight": "500",
-					"fontSize": "1.25rem",
+					"fontSize": "1.875rem",
 					"textTransform": "uppercase",
 					"letterSpacing": "0.32em"
 				},

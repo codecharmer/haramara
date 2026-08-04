@@ -15,5 +15,5 @@
 
 ?>
 <!-- wp:html -->
-<img class="hm-brand__mark" src="<?php echo esc_url( get_template_directory_uri() ); ?>/assets/images/logo-haramara.webp" alt="" width="34" height="34" decoding="async" />
+<img class="hm-brand__mark" src="<?php echo esc_url( get_template_directory_uri() ); ?>/assets/images/logo-haramara.webp" alt="" width="51" height="51" decoding="async" />
 <!-- /wp:html -->
