@@ -13,9 +13,63 @@
  * 1. Product grid & cards
  * ---------------------------------------------------------------------- */
 
-.hm-product-grid .wc-block-product-template,
-.hm-product-grid.wp-block-woocommerce-product-collection > .wc-block-product-template {
-	gap: var(--wp--preset--spacing--lg);
+/* Two neat centered columns at every width. The doubled class outweighs
+ * wc-blocks' own template rules without resorting to !important. */
+.hm-product-grid.hm-product-grid .wc-block-product-template {
+	display: grid;
+	/* !important: Product Collection prints its own responsive column CSS
+	 * after the theme stylesheet; the carta is two columns at every width. */
+	grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+	gap: var(--wp--preset--spacing--xl) var(--wp--preset--spacing--md);
+	width: 100%;
+	max-width: 56rem;
+	margin-inline: auto;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+/* Each product cell stretches so cards in a row share the row's height.
+ * !important: wc-blocks re-asserts a half-width li inside a ≥600px media
+ * query at higher specificity; the grid track owns the width here. */
+.hm-product-grid.hm-product-grid .wc-block-product {
+	min-width: 0;
+	width: 100% !important;
+	display: grid;
+}
+
+/* One centered column of content per card; the action seats on the row's
+ * shared baseline via margin-top auto. */
+.hm-product-card {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	height: 100%;
+	width: 100%;
+	max-width: 20rem;
+	margin-inline: auto;
+	text-align: center;
+}
+
+.hm-product-card > * {
+	width: 100%;
+}
+
+.hm-product-card .wp-block-woocommerce-product-image {
+	margin-bottom: var(--wp--preset--spacing--sm);
+}
+
+.hm-product-card .wp-block-woocommerce-product-image img {
+	width: 100%;
+	height: auto;
+}
+
+.hm-product-card .wp-block-woocommerce-product-button {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	margin-top: auto;
+	/* Core's button block ships width: fit-content; the action spans the card. */
+	width: 100%;
 }
 
 /* Product image inside a card. */
@@ -422,8 +476,21 @@
 	color: var(--wp--preset--color--bone);
 }
 
-/* Full-width add button beneath the stepper (Woo stacks the block as a column). */
+/* Full-width add button beneath the stepper. Ghost voice: sixteen cards may
+ * not each carry the solid-brass decisive action — that belongs to the page
+ * CTA alone. Later in the cascade than the shared solid rule, so it wins at
+ * equal specificity. */
 .wp-block-woocommerce-product-button .wc-block-components-product-button__button {
-	width: 100%;
-	white-space: nowrap;
+	display: block;
+	width: 100% !important;
+	background-color: transparent !important;
+	border: 1px solid var(--wp--preset--color--brass) !important;
+	color: var(--wp--preset--color--brass) !important;
+}
+
+.wp-block-woocommerce-product-button .wc-block-components-product-button__button:hover,
+.wp-block-woocommerce-product-button .wc-block-components-product-button__button:focus-visible {
+	background-color: var(--wp--preset--color--brass) !important;
+	color: var(--wp--preset--color--noche) !important;
+	transform: none;
 }

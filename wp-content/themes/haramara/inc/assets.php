@@ -33,7 +33,10 @@ function haramara_enqueue_assets(): void {
 		haramara_asset_version( 'assets/css/theme.css' )
 	);
 
-	if ( function_exists( 'is_woocommerce' ) && ( is_woocommerce() || is_cart() || is_checkout() || is_account_page() ) ) {
+	// Site-wide, not per-template: commerce blocks render on editorial pages
+	// too (the carta's order grid arrives via a pattern, invisible to
+	// is_woocommerce()), and the file is ~13 KB.
+	if ( class_exists( 'WooCommerce' ) ) {
 		wp_enqueue_style(
 			'haramara-woo',
 			HARAMARA_THEME_URI . '/assets/css/woocommerce.css',

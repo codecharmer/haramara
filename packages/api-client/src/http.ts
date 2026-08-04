@@ -20,7 +20,7 @@ export class ApiError extends Error {
 }
 
 export interface HttpConfig {
-	/** Site origin, e.g. https://haramarapanaderia.com (no trailing slash). */
+	/** Site origin, e.g. https://haramara.cafe (no trailing slash). */
 	baseUrl: string;
 	/** Optional pre-launch shared key sent as X-Haramara-App (see Rest\AccessGate). */
 	appKey?: string;

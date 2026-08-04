@@ -121,7 +121,7 @@ export default function OrderScreen() {
 					</View>
 
 					<View style={styles.card}>
-						<Text style={styles.sectionTitle}>Tu pan</Text>
+						<Text style={styles.sectionTitle}>Tu pedido</Text>
 						{data.items.map((item, i) => (
 							<View key={`${item.name}-${i}`} style={styles.itemRow}>
 								<Text style={styles.itemName}>

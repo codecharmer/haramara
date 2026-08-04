@@ -127,7 +127,7 @@ export default function CheckoutScreen() {
 					</View>
 				) : (
 					<View style={styles.card}>
-						<Text style={styles.sectionTitle}>¿Qué día pasas por tu pan?</Text>
+						<Text style={styles.sectionTitle}>¿Qué día vienes por tu pedido?</Text>
 						{dates.isLoading && <ActivityIndicator color={color.accentDeep} />}
 						<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
 							{dates.data?.map((d) => (
