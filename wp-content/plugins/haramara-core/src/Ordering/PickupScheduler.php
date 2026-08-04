@@ -36,6 +36,17 @@ final class PickupScheduler implements Bootable {
 	private const BLOCK_DATE = 'haramara/pickup-date';
 	private const BLOCK_SLOT = 'haramara/pickup-slot';
 
+	/** Transient prefix for per-date slot-count caches (+ Y-m-d). */
+	private const COUNTS_TRANSIENT = 'haramara_slot_counts_';
+
+	/**
+	 * In-request memo of slot counts per date. valid_dates() walks the whole
+	 * look-ahead window, so without this each request re-queries per day.
+	 *
+	 * @var array<string,array<string,int>>
+	 */
+	private static array $counts_memo = array();
+
 	/** Order statuses that occupy slot capacity. */
 	private const OCCUPYING_STATUSES = array(
 		'wc-pending',
@@ -61,6 +72,31 @@ final class PickupScheduler implements Bootable {
 		add_action( 'init', array( $this, 'register_block_fields' ), 20 );
 		add_action( 'woocommerce_blocks_validate_location_order_fields', array( $this, 'validate_block_fields' ), 10, 2 );
 		add_action( 'woocommerce_store_api_checkout_order_processed', array( $this, 'normalize_block_fields' ) );
+
+		// Slot-capacity cache invalidation: any order lifecycle event flushes
+		// the cached counts for that order's pickup date, so the transient can
+		// be long-lived without ever serving a stale capacity decision.
+		add_action( 'woocommerce_new_order', array( $this, 'flush_slot_counts' ) );
+		add_action( 'woocommerce_update_order', array( $this, 'flush_slot_counts' ) );
+		add_action( 'woocommerce_order_status_changed', array( $this, 'flush_slot_counts' ) );
+	}
+
+	/**
+	 * Drop the cached slot counts for the date an order occupies.
+	 *
+	 * @param int|mixed $order_id Order ID from any of the lifecycle hooks.
+	 */
+	public function flush_slot_counts( $order_id ): void {
+		$order = function_exists( 'wc_get_order' ) ? wc_get_order( (int) $order_id ) : false;
+		if ( ! $order instanceof \WC_Order ) {
+			return;
+		}
+		$date = (string) $order->get_meta( self::META_DATE );
+		if ( '' === $date ) {
+			return;
+		}
+		unset( self::$counts_memo[ $date ] );
+		delete_transient( self::COUNTS_TRANSIENT . $date );
 	}
 
 	/*
@@ -224,21 +260,18 @@ final class PickupScheduler implements Bootable {
 			return array();
 		}
 
+		if ( isset( self::$counts_memo[ $date ] ) ) {
+			return self::$counts_memo[ $date ];
+		}
+
+		$cached = get_transient( self::COUNTS_TRANSIENT . $date );
+		if ( is_array( $cached ) ) {
+			self::$counts_memo[ $date ] = $cached;
+			return $cached;
+		}
+
 		try {
-			$orders = wc_get_orders(
-				array(
-					'type'       => 'shop_order',
-					'limit'      => -1,
-					'status'     => self::OCCUPYING_STATUSES,
-					'return'     => 'objects',
-					'meta_query' => array(
-						array(
-							'key'   => self::META_DATE,
-							'value' => $date,
-						),
-					),
-				)
-			);
+			$orders = self::orders_for_date( $date );
 		} catch ( \Throwable $e ) {
 			// Capacity math must never fatal the site (e.g. queries fired
 			// before order types are registered). Fail open: no slots counted.
@@ -257,7 +290,59 @@ final class PickupScheduler implements Bootable {
 			$counts[ $slot ] = ( $counts[ $slot ] ?? 0 ) + 1;
 		}
 
+		// Lifecycle hooks flush this the moment any order on the date changes;
+		// the expiry is only a safety net against a missed event.
+		set_transient( self::COUNTS_TRANSIENT . $date, $counts, 600 );
+		self::$counts_memo[ $date ] = $counts;
+
 		return $counts;
+	}
+
+	/**
+	 * Occupying orders for one pickup date, on either order datastore.
+	 *
+	 * `wc_get_orders( meta_query )` is only honoured by the HPOS table store;
+	 * the legacy CPT store drops the argument with a doing-it-wrong (silently
+	 * counting EVERY order against EVERY date), so the CPT path goes through
+	 * WP_Query where postmeta filtering is native.
+	 *
+	 * @return array<int,\WC_Order|false>
+	 */
+	private static function orders_for_date( string $date ): array {
+		$meta_query = array(
+			array(
+				'key'   => self::META_DATE,
+				'value' => $date,
+			),
+		);
+
+		$hpos = class_exists( \Automattic\WooCommerce\Utilities\OrderUtil::class )
+			&& \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled();
+
+		if ( $hpos ) {
+			return wc_get_orders(
+				array(
+					'type'       => 'shop_order',
+					'limit'      => -1,
+					'status'     => self::OCCUPYING_STATUSES,
+					'return'     => 'objects',
+					'meta_query' => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- capacity lookup is keyed and cached.
+				)
+			);
+		}
+
+		$ids = get_posts(
+			array(
+				'post_type'     => 'shop_order',
+				'post_status'   => self::OCCUPYING_STATUSES,
+				'numberposts'   => -1,
+				'fields'        => 'ids',
+				'no_found_rows' => true,
+				'meta_query'    => $meta_query, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- capacity lookup is keyed and cached.
+			)
+		);
+
+		return array_map( 'wc_get_order', array_map( 'intval', (array) $ids ) );
 	}
 
 	/**
