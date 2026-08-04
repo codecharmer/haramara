@@ -1,0 +1,906 @@
+/**
+ * Haramara — front-end runtime styles.
+ *
+ * Tokens come from theme.json (--wp--preset--*, --wp--custom--*); this file
+ * carries what theme.json cannot express: the timeline rail, header states,
+ * the daylight arc, reveal motion, menu leaders and page scaffolding.
+ * Class prefix: hm-. No hardcoded values without a token counterpart
+ * (rgba() derivations of token colors are allowed for veils and hairlines).
+ *
+ * The front page is the café's day: section grounds move from alba (08:00)
+ * through carbon and espresso to ocaso (18:30) and noche (20:00). A fixed
+ * candle-glow veil warms with scroll progress (--hm-warmth, set by
+ * enhance.js; 0 → 1 across the document, removed under reduced motion).
+ */
+
+/* -------------------------------------------------------------------------
+ * 0. Base
+ * ---------------------------------------------------------------------- */
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+	text-underline-offset: 0.18em;
+}
+
+::selection {
+	background: var(--wp--preset--color--brass);
+	color: var(--wp--preset--color--noche);
+}
+
+:where(a):focus-visible,
+:where(button, [role="button"], input, select, textarea, summary):focus-visible {
+	outline: 2px solid var(--wp--preset--color--brass);
+	outline-offset: 3px;
+	border-radius: 0;
+}
+
+/* The daylight arc: candle-warm veil, deepening as the day advances. */
+body::after {
+	content: "";
+	position: fixed;
+	inset: 0;
+	pointer-events: none;
+	z-index: 1;
+	background: radial-gradient(
+		120% 90% at 50% 108%,
+		rgba(200, 165, 102, 0.2) 0%,
+		rgba(200, 165, 102, 0.05) 40%,
+		rgba(200, 165, 102, 0) 64%
+	);
+	opacity: var(--hm-warmth, 0);
+	transition: opacity 600ms linear;
+}
+
+/* Long-form measure. */
+.hm-content > p,
+.hm-content > ul,
+.hm-content > ol,
+.hm-prose p {
+	max-width: var(--wp--custom--measure);
+}
+
+/* -------------------------------------------------------------------------
+ * 1. Skip link
+ * ---------------------------------------------------------------------- */
+
+.hm-skip-link {
+	position: absolute;
+	left: -9999px;
+	top: 0;
+	z-index: 100;
+	padding: 0.8rem 1.4rem;
+	background: var(--wp--preset--color--noche);
+	color: var(--wp--preset--color--bone);
+	font-size: var(--wp--preset--font-size--sm);
+	letter-spacing: 0.08em;
+	text-decoration: none;
+}
+
+.hm-skip-link:focus {
+	left: 0.75rem;
+	top: 0.75rem;
+}
+
+/* -------------------------------------------------------------------------
+ * 2. Header
+ * ---------------------------------------------------------------------- */
+
+.hm-header {
+	position: sticky;
+	top: 0;
+	z-index: 40;
+	transition:
+		background-color var(--wp--custom--duration--base) var(--wp--custom--easing--standard),
+		box-shadow var(--wp--custom--duration--base) var(--wp--custom--easing--standard);
+}
+
+.hm-header--transparent {
+	position: fixed;
+	width: 100%;
+	background: linear-gradient(180deg, rgba(13, 12, 10, 0.55) 0%, rgba(13, 12, 10, 0) 100%);
+}
+
+.hm-header--solid {
+	box-shadow: inset 0 -1px 0 var(--wp--custom--hairline);
+}
+
+.hm-header.is-scrolled {
+	position: fixed;
+	width: 100%;
+	background: rgba(13, 12, 10, 0.88);
+	-webkit-backdrop-filter: blur(14px) saturate(1.05);
+	backdrop-filter: blur(14px) saturate(1.05);
+	box-shadow: inset 0 -1px 0 var(--wp--custom--hairline);
+}
+
+.hm-header .wp-block-site-title a {
+	text-decoration: none;
+}
+
+.hm-header .wp-block-navigation a {
+	font-size: var(--wp--preset--font-size--sm);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	text-decoration: none;
+	color: var(--wp--preset--color--limestone);
+}
+
+.hm-header .wp-block-navigation a:hover,
+.hm-header .wp-block-navigation a:focus {
+	color: var(--wp--preset--color--brass-soft);
+}
+
+.hm-header .wp-block-navigation__responsive-container.is-menu-open {
+	background: var(--wp--preset--color--noche);
+	padding-top: var(--wp--preset--spacing--xxl);
+}
+
+.hm-header .wp-block-navigation__responsive-container.is-menu-open a {
+	font-family: var(--wp--preset--font-family--display);
+	font-size: var(--wp--preset--font-size--xl);
+	letter-spacing: 0.06em;
+	text-transform: none;
+	color: var(--wp--preset--color--bone);
+}
+
+.hm-header .wp-block-navigation__responsive-container-open,
+.hm-header .wp-block-navigation__responsive-container-close {
+	color: var(--wp--preset--color--bone);
+}
+
+.hm-header .hm-header__cta .wp-block-button__link {
+	padding: 0.55rem 1.3rem;
+	font-size: 0.75rem;
+	letter-spacing: 0.2em;
+}
+
+@media (max-width: 781px) {
+	.hm-header .hm-header__cta {
+		display: none;
+	}
+}
+
+/* -------------------------------------------------------------------------
+ * 3. Timeline — stations, days, hero
+ * ---------------------------------------------------------------------- */
+
+/* ——— 08:00 · LABEL ——— : the rule is the timeline, the hour is data. */
+.hm-station {
+	display: flex;
+	align-items: center;
+	gap: 1.75rem;
+	width: 100%;
+	margin-bottom: var(--wp--preset--spacing--xl);
+	/* The hour markers are the thesis: nothing may cover them. */
+	position: relative;
+	z-index: 3;
+}
+
+.hm-station::before,
+.hm-station::after {
+	content: "";
+	flex: 1 1 0;
+	height: 1px;
+	background: var(--wp--custom--hairline);
+}
+
+.hm-station > * {
+	margin: 0;
+}
+
+.hm-station__hour {
+	font-family: var(--wp--preset--font-family--display);
+	font-size: var(--wp--preset--font-size--lg);
+	line-height: 1;
+	color: var(--wp--preset--color--brass);
+	letter-spacing: 0.08em;
+	white-space: nowrap;
+}
+
+.hm-station__label {
+	font-size: var(--wp--preset--font-size--sm);
+	letter-spacing: 0.22em;
+	text-transform: uppercase;
+	color: var(--wp--preset--color--smoke);
+	white-space: nowrap;
+}
+
+@media (max-width: 599px) {
+	.hm-station {
+		gap: 1rem;
+	}
+}
+
+.hm-day {
+	padding-top: var(--wp--preset--spacing--xxl);
+	padding-bottom: var(--wp--preset--spacing--xxl);
+}
+
+@media (min-width: 782px) {
+	.hm-day {
+		padding-top: var(--wp--preset--spacing--xxxl);
+		padding-bottom: var(--wp--preset--spacing--xxxl);
+	}
+}
+
+/* No root gap above the day: the fixed header floats over the hero and
+ * every section carries its own breath. */
+.wp-site-blocks {
+	--wp--style--block-gap: 0;
+}
+
+/* Hero — 08:00. */
+.hm-hero {
+	position: relative;
+}
+
+.hm-hero.wp-block-cover {
+	padding: 0;
+}
+
+.hm-hero .wp-block-cover__inner-container {
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-end;
+	box-sizing: border-box;
+	min-height: inherit;
+	padding-left: clamp(1.1rem, 4vw, 4rem);
+	padding-right: clamp(1.1rem, 4vw, 4rem);
+	padding-bottom: clamp(1.75rem, 4.5vh, 3rem);
+}
+
+/* Keep the whole opening stack — headline, lede, action, hours — inside
+ * the first viewport at every size (contract: FIRST VIEWPORT). */
+.hm-hero .hm-reveal-group > * + * {
+	margin-block-start: 0.9rem;
+}
+
+/* Short viewports trade a step of display scale for a complete opening.
+ * The preset utility class is !important, so the token itself is rescoped. */
+@media (max-height: 900px) {
+	.hm-hero {
+		--wp--preset--font-size--display: var(--wp--preset--font-size--xxxl);
+	}
+
+	.hm-hero .hm-lede {
+		font-size: var(--wp--preset--font-size--base);
+		max-width: 42ch;
+	}
+}
+
+.hm-hero h1 {
+	max-width: 12ch;
+	text-wrap: balance;
+}
+
+.hm-lede,
+.hm-lead {
+	max-width: 46ch;
+	font-size: calc(var(--wp--preset--font-size--md) * 1.5);
+	font-weight: 340;
+	color: var(--wp--preset--color--limestone);
+}
+
+/* !important matches the WP-generated .has-*-font-size utilities these override. */
+p.has-sm-font-size {
+	font-size: calc(var(--wp--preset--font-size--sm) * 1.5) !important;
+}
+
+p.has-md-font-size {
+	font-size: calc(var(--wp--preset--font-size--md) * 1.5) !important;
+}
+
+.hm-hero .hm-lede {
+	max-width: 44ch;
+}
+
+.hm-hero__horario {
+	color: var(--wp--preset--color--smoke);
+	letter-spacing: 0.2em;
+	text-transform: uppercase;
+}
+
+/* Brass plumb line dropping from the hero toward the first station. */
+.hm-hero::after {
+	content: "";
+	position: absolute;
+	left: 50%;
+	bottom: 0;
+	transform: translate(-50%, 50%);
+	width: 1px;
+	height: clamp(3rem, 9vh, 6rem);
+	background: linear-gradient(180deg, rgba(200, 165, 102, 0) 0%, var(--wp--preset--color--brass) 100%);
+	z-index: 5;
+}
+
+/* La cueva caption inside its cover. */
+.hm-cueva__foto .wp-block-cover__inner-container {
+	display: flex;
+	align-items: flex-end;
+	min-height: inherit;
+	padding-bottom: clamp(2rem, 6vh, 4rem);
+}
+
+.hm-cueva__pie p {
+	max-width: 38ch;
+	text-wrap: balance;
+}
+
+/* -------------------------------------------------------------------------
+ * 4. Reveal motion — one grammar page-wide
+ * ---------------------------------------------------------------------- */
+
+.hm-reveal {
+	opacity: 0;
+	transform: translateY(22px);
+	filter: blur(5px);
+	transition:
+		opacity var(--wp--custom--duration--slow) var(--wp--custom--easing--standard),
+		transform var(--wp--custom--duration--slow) var(--wp--custom--easing--standard),
+		filter var(--wp--custom--duration--slow) var(--wp--custom--easing--standard);
+	will-change: opacity, transform, filter;
+}
+
+.hm-reveal.is-inview {
+	opacity: 1;
+	transform: none;
+	filter: none;
+}
+
+/* Staggered siblings inside a reveal group. */
+.hm-reveal-group .hm-reveal:nth-child(2) { transition-delay: 120ms; }
+.hm-reveal-group .hm-reveal:nth-child(3) { transition-delay: 240ms; }
+.hm-reveal-group .hm-reveal:nth-child(4) { transition-delay: 360ms; }
+.hm-reveal-group .hm-reveal:nth-child(5) { transition-delay: 480ms; }
+
+/* Full-bleed covers reveal by light alone: no blur (expensive at viewport
+ * scale) and no translate (it would expose a seam under the section edge). */
+.wp-block-cover.hm-reveal {
+	filter: none;
+	transform: none;
+}
+
+/* Slow scale-settle on cover imagery. */
+.hm-hero .wp-block-cover__image-background,
+.hm-cueva__foto .wp-block-cover__image-background,
+.hm-visita-cover .wp-block-cover__image-background {
+	transform: scale(1.045);
+	transition: transform 2600ms var(--wp--custom--easing--standard);
+}
+
+.hm-hero.is-inview .wp-block-cover__image-background,
+.hm-cueva__foto.is-inview .wp-block-cover__image-background,
+.hm-visita-cover.is-inview .wp-block-cover__image-background {
+	transform: scale(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+
+	body::after {
+		display: none;
+	}
+
+	.hm-reveal,
+	.hm-reveal-group .hm-reveal {
+		opacity: 1;
+		transform: none;
+		filter: none;
+		transition: none;
+	}
+
+	.hm-hero .wp-block-cover__image-background,
+	.hm-cueva__foto .wp-block-cover__image-background,
+	.hm-visita-cover .wp-block-cover__image-background {
+		transform: none;
+		transition: none;
+	}
+}
+
+/* -------------------------------------------------------------------------
+ * 5. Imagery
+ * ---------------------------------------------------------------------- */
+
+.wp-block-image.is-style-framed img {
+	box-shadow: var(--wp--preset--shadow--filete), var(--wp--preset--shadow--abismo);
+}
+
+@media (min-width: 782px) {
+	.hm-overlap .hm-overlap__media--lift {
+		margin-top: calc(-1 * var(--wp--preset--spacing--lg));
+	}
+
+	.hm-overlap .hm-overlap__media--drop {
+		margin-bottom: calc(-1 * var(--wp--preset--spacing--xxl));
+		position: relative;
+		z-index: 2;
+	}
+}
+
+/* Art-directed crops: portrait photography is held to 4:5 inside overlap
+ * columns so the composition, not the file's native height, sets the scale. */
+.hm-overlap .wp-block-image img {
+	width: 100%;
+	aspect-ratio: 4 / 5;
+	object-fit: cover;
+}
+
+/* Keep the golden bottle and celosía in frame, not the pavement. */
+.hm-day--ocaso .hm-overlap .wp-block-image img {
+	object-position: 50% 22%;
+}
+
+.hm-figure img {
+	width: 100%;
+	height: auto;
+	object-fit: cover;
+}
+
+/* -------------------------------------------------------------------------
+ * 6. La carta — dotted leaders
+ * ---------------------------------------------------------------------- */
+
+.hm-carta__row {
+	display: flex;
+	align-items: flex-end;
+	gap: 0.9rem;
+	padding: 0.7rem 0;
+}
+
+.hm-carta__row > * {
+	margin: 0;
+}
+
+.hm-carta__name {
+	font-weight: 460;
+	color: var(--wp--preset--color--bone);
+}
+
+.hm-carta__leader {
+	flex: 1 1 0;
+	align-self: flex-end;
+	border-bottom: 1px dotted rgba(162, 152, 136, 0.45);
+	transform: translateY(-0.34em);
+	min-width: 2rem;
+}
+
+.hm-carta__price {
+	font-variant-numeric: tabular-nums;
+	color: var(--wp--preset--color--limestone);
+	white-space: nowrap;
+}
+
+.hm-carta__note {
+	font-size: calc(var(--wp--preset--font-size--sm) * 1.5);
+	font-style: italic;
+	color: var(--wp--preset--color--smoke);
+	max-width: 52ch;
+}
+
+.hm-carta-seccion {
+	padding-top: var(--wp--preset--spacing--xl);
+	padding-bottom: var(--wp--preset--spacing--xl);
+}
+
+/* -------------------------------------------------------------------------
+ * 7. Filtrados — the brew ladder
+ * ---------------------------------------------------------------------- */
+
+.hm-ladder {
+	border-top: 1px solid var(--wp--custom--hairline);
+}
+
+.hm-ladder__tier {
+	display: grid;
+	grid-template-columns: 1fr;
+	gap: 0.4rem var(--wp--preset--spacing--lg);
+	padding: var(--wp--preset--spacing--lg) 0;
+	border-bottom: 1px solid var(--wp--custom--hairline);
+	align-items: baseline;
+}
+
+.hm-ladder__tier > * {
+	margin: 0;
+}
+
+@media (min-width: 782px) {
+	.hm-ladder__tier {
+		grid-template-columns: minmax(13rem, 1fr) 2fr auto;
+	}
+}
+
+.hm-ladder__name {
+	font-family: var(--wp--preset--font-family--display);
+	font-size: var(--wp--preset--font-size--xxl);
+	line-height: 1;
+	letter-spacing: 0.06em;
+	text-transform: uppercase;
+	color: var(--wp--preset--color--limestone);
+}
+
+.hm-ladder__tier--groove .hm-ladder__name {
+	color: var(--wp--preset--color--clay);
+}
+
+.hm-ladder__tier--funky .hm-ladder__name {
+	color: var(--wp--preset--color--brass);
+}
+
+.hm-ladder__desc {
+	color: var(--wp--preset--color--smoke);
+	max-width: 46ch;
+}
+
+.hm-ladder__price {
+	font-variant-numeric: tabular-nums;
+	font-size: var(--wp--preset--font-size--md);
+	color: var(--wp--preset--color--bone);
+	justify-self: start;
+}
+
+@media (min-width: 782px) {
+	.hm-ladder__price {
+		justify-self: end;
+	}
+}
+
+/* -------------------------------------------------------------------------
+ * 8. Voice, links, buttons, seals
+ * ---------------------------------------------------------------------- */
+
+.hm-voz {
+	font-family: var(--wp--preset--font-family--display);
+	font-size: var(--wp--preset--font-size--xl);
+	line-height: 1.18;
+	letter-spacing: 0.02em;
+	color: var(--wp--preset--color--bone);
+	text-wrap: balance;
+}
+
+.hm-enlace,
+.wp-block-button.is-style-link-underline .wp-block-button__link {
+	background: none;
+	border: 0;
+	padding: 0.2rem 0;
+	color: var(--wp--preset--color--limestone);
+	text-transform: uppercase;
+	letter-spacing: 0.18em;
+	font-size: var(--wp--preset--font-size--sm);
+	text-decoration: none;
+	box-shadow: inset 0 -1px 0 var(--wp--custom--hairlineStrong);
+	transition:
+		box-shadow var(--wp--custom--duration--fast) var(--wp--custom--easing--standard),
+		color var(--wp--custom--duration--fast) var(--wp--custom--easing--standard);
+}
+
+.hm-enlace:hover,
+.hm-enlace:focus,
+.wp-block-button.is-style-link-underline .wp-block-button__link:hover,
+.wp-block-button.is-style-link-underline .wp-block-button__link:focus {
+	color: var(--wp--preset--color--brass-soft);
+	box-shadow: inset 0 -1px 0 var(--wp--preset--color--brass-soft);
+	background: none;
+}
+
+/* Solid brass: reserved for the single decisive action on commerce screens. */
+.wp-block-button.is-style-solid .wp-block-button__link {
+	background: var(--wp--preset--color--brass);
+	border-color: var(--wp--preset--color--brass);
+	color: var(--wp--preset--color--noche);
+}
+
+.wp-block-button.is-style-solid .wp-block-button__link:hover,
+.wp-block-button.is-style-solid .wp-block-button__link:focus {
+	background: var(--wp--preset--color--brass-soft);
+	border-color: var(--wp--preset--color--brass-soft);
+	color: var(--wp--preset--color--noche);
+}
+
+/* Legacy ghost alias (pre-rename markup); the default button is already ghost. */
+.wp-block-button.is-style-ghost .wp-block-button__link {
+	background: transparent;
+	border: 1px solid var(--wp--preset--color--brass);
+	color: var(--wp--preset--color--brass);
+}
+
+.wp-block-button.is-style-ghost .wp-block-button__link:hover,
+.wp-block-button.is-style-ghost .wp-block-button__link:focus {
+	background: var(--wp--preset--color--brass);
+	color: var(--wp--preset--color--noche);
+}
+
+.wp-block-group.is-style-hairline {
+	box-shadow: var(--wp--preset--shadow--filete);
+	padding: var(--wp--preset--spacing--lg);
+}
+
+.hm-sello img {
+	border-radius: 50%;
+	box-shadow: 0 0 0 1px rgba(200, 165, 102, 0.35), var(--wp--preset--shadow--abismo);
+}
+
+/* Candlelight band (order CTA and similar closers). */
+.hm-band--vela {
+	background-image: var(--wp--preset--gradient--vela);
+	background-repeat: no-repeat;
+	background-size: cover;
+}
+
+/* -------------------------------------------------------------------------
+ * 9. Eventos & lealtad rows
+ * ---------------------------------------------------------------------- */
+
+.hm-evento {
+	display: grid;
+	grid-template-columns: 3.6rem 1fr;
+	gap: 0.35rem var(--wp--preset--spacing--lg);
+	padding: var(--wp--preset--spacing--md) 0;
+	border-bottom: 1px solid var(--wp--custom--hairline);
+	align-items: baseline;
+}
+
+.hm-evento > * {
+	margin: 0;
+}
+
+.hm-evento__fecha {
+	font-family: var(--wp--preset--font-family--display);
+	font-size: var(--wp--preset--font-size--xl);
+	line-height: 1;
+	color: var(--wp--preset--color--brass);
+	grid-row: span 2;
+}
+
+.hm-evento__titulo {
+	color: var(--wp--preset--color--bone);
+	font-weight: 460;
+}
+
+.hm-evento__detalle {
+	grid-column: 2;
+	color: var(--wp--preset--color--smoke);
+	font-size: calc(var(--wp--preset--font-size--sm) * 1.5);
+}
+
+/* -------------------------------------------------------------------------
+ * 10. Page scaffolding — heads, bands, archives, entries
+ * ---------------------------------------------------------------------- */
+
+.hm-band {
+	padding-top: var(--wp--preset--spacing--xxl);
+	padding-bottom: var(--wp--preset--spacing--xxl);
+}
+
+.hm-head {
+	margin-bottom: var(--wp--preset--spacing--lg);
+}
+
+.hm-head--center {
+	text-align: center;
+}
+
+.hm-page-head,
+.hm-page-header,
+.hm-archive-header,
+.hm-shop-header {
+	padding-top: calc(var(--wp--preset--spacing--xxl) + 4rem);
+	padding-bottom: var(--wp--preset--spacing--lg);
+}
+
+.hm-posts__grid,
+.hm-posts {
+	row-gap: var(--wp--preset--spacing--xl);
+}
+
+.hm-postcard {
+	border-top: 1px solid var(--wp--custom--hairline);
+	padding-top: var(--wp--preset--spacing--md);
+}
+
+.hm-postcard .wp-block-post-title a {
+	text-decoration: none;
+}
+
+.hm-postcard .wp-block-post-title a:hover {
+	color: var(--wp--preset--color--brass-soft);
+}
+
+.hm-entry-meta,
+.hm-entry-footer {
+	color: var(--wp--preset--color--smoke);
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+.hm-entry-header {
+	margin-bottom: var(--wp--preset--spacing--lg);
+}
+
+.hm-tag {
+	font-size: var(--wp--preset--font-size--sm);
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	color: var(--wp--preset--color--smoke);
+}
+
+.hm-pagination a,
+.hm-pagination .page-numbers {
+	color: var(--wp--preset--color--limestone);
+	text-decoration: none;
+	letter-spacing: 0.12em;
+}
+
+.hm-pagination a:hover,
+.hm-pagination a:focus {
+	color: var(--wp--preset--color--brass-soft);
+}
+
+.hm-pagination .page-numbers.current {
+	color: var(--wp--preset--color--brass);
+}
+
+.hm-404,
+.hm-search {
+	min-height: 55vh;
+}
+
+.hm-search__list {
+	border-top: 1px solid var(--wp--custom--hairline);
+}
+
+/* -------------------------------------------------------------------------
+ * 11. Commerce chrome (layout only — woocommerce.css owns component detail)
+ * ---------------------------------------------------------------------- */
+
+.hm-product-grid .hm-product-card img {
+	transition: transform 1200ms var(--wp--custom--easing--standard);
+}
+
+.hm-product-card:hover img {
+	transform: scale(1.03);
+}
+
+.hm-product-card .wp-block-post-title a {
+	text-decoration: none;
+}
+
+.hm-product-card .wp-block-post-title a:hover {
+	color: var(--wp--preset--color--brass-soft);
+}
+
+.hm-pickup-note {
+	color: var(--wp--preset--color--smoke);
+}
+
+.hm-cart-wrap,
+.hm-checkout-wrap,
+.hm-confirmation-wrap {
+	padding-top: calc(var(--wp--preset--spacing--xxl) + 4rem);
+	padding-bottom: var(--wp--preset--spacing--xxl);
+}
+
+.hm-thankyou {
+	min-height: 55vh;
+}
+
+/* -------------------------------------------------------------------------
+ * 12. Footer
+ * ---------------------------------------------------------------------- */
+
+.hm-footer {
+	box-shadow: inset 0 1px 0 var(--wp--custom--hairline);
+}
+
+.hm-footer a {
+	text-decoration: none;
+	color: var(--wp--preset--color--smoke);
+}
+
+.hm-footer a:hover,
+.hm-footer a:focus {
+	color: var(--wp--preset--color--brass-soft);
+}
+
+.hm-footer .wp-block-site-title a {
+	color: var(--wp--preset--color--bone);
+}
+
+.hm-footer__tag {
+	max-width: 34ch;
+	color: var(--wp--preset--color--smoke);
+}
+
+.hm-footer__meta {
+	font-size: var(--wp--preset--font-size--sm);
+	color: var(--wp--preset--color--smoke);
+	letter-spacing: 0.04em;
+}
+
+.hm-footer__base {
+	border-top: 1px solid var(--wp--custom--hairline);
+}
+
+.hm-footer__legal-nav a {
+	font-size: var(--wp--preset--font-size--sm);
+}
+
+/* -------------------------------------------------------------------------
+ * 13. Forms — char wells, hairline edges
+ * ---------------------------------------------------------------------- */
+
+.hm-main input[type="text"],
+.hm-main input[type="email"],
+.hm-main input[type="tel"],
+.hm-main input[type="password"],
+.hm-main input[type="search"],
+.hm-main input[type="number"],
+.hm-main select,
+.hm-main textarea {
+	background: var(--wp--preset--color--char);
+	border: 1px solid var(--wp--custom--hairline);
+	border-radius: 0;
+	color: var(--wp--preset--color--bone);
+	padding: 0.85rem 1rem;
+	font-family: inherit;
+	font-size: var(--wp--preset--font-size--base);
+}
+
+.hm-main input::placeholder,
+.hm-main textarea::placeholder {
+	color: var(--wp--preset--color--smoke);
+	opacity: 1;
+}
+
+.hm-main input:focus,
+.hm-main select:focus,
+.hm-main textarea:focus {
+	border-color: var(--wp--preset--color--brass);
+	outline: none;
+	box-shadow: 0 0 0 1px var(--wp--preset--color--brass);
+}
+
+/* -------------------------------------------------------------------------
+ * 14. Comments (quiet)
+ * ---------------------------------------------------------------------- */
+
+.hm-comments {
+	border-top: 1px solid var(--wp--custom--hairline);
+	padding-top: var(--wp--preset--spacing--lg);
+}
+
+/* -------------------------------------------------------------------------
+ * 15. Language switcher (ES · EN)
+ * ---------------------------------------------------------------------- */
+
+.hm-lang {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	font-size: var(--wp--preset--font-size--sm);
+	letter-spacing: 0.14em;
+	color: var(--wp--preset--color--smoke);
+	white-space: nowrap;
+}
+
+.hm-lang a {
+	color: var(--wp--preset--color--smoke);
+	text-decoration: none;
+	padding: 0.2rem 0.1rem;
+	transition: color var(--wp--custom--duration--fast) var(--wp--custom--easing--standard);
+}
+
+.hm-lang a:hover,
+.hm-lang a:focus {
+	color: var(--wp--preset--color--brass-soft);
+}
+
+.hm-lang a.is-current {
+	color: var(--wp--preset--color--bone);
+	box-shadow: inset 0 -1px 0 var(--wp--preset--color--brass);
+}

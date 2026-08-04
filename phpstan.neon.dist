@@ -1,0 +1,36 @@
+includes:
+    - phpstan-baseline.neon
+
+parameters:
+    level: 6
+
+    paths:
+        - wp-content/plugins/haramara-core/src
+        - wp-content/plugins/haramara-core/haramara-core.php
+
+    # WordPress + WooCommerce symbol definitions for static analysis.
+    # Installed via `composer install` (php-stubs/wordpress-stubs,
+    # php-stubs/woocommerce-stubs). Adjust the path if your vendor dir differs.
+    bootstrapFiles:
+        - vendor/php-stubs/wordpress-stubs/wordpress-stubs.php
+        - vendor/php-stubs/woocommerce-stubs/woocommerce-stubs.php
+
+    # These constants are defined at runtime in haramara-core.php.
+    scanFiles:
+        - wp-content/plugins/haramara-core/haramara-core.php
+
+    treatPhpDocTypesAsCertain: false
+    reportUnmatchedIgnoredErrors: false
+
+    # WordPress leans on dynamic patterns PHPStan cannot always resolve.
+    ignoreErrors:
+        # Optional Composer autoloader path is resolved at runtime.
+        -
+            message: '#vendor/autoload\.php#'
+            reportUnmatched: false
+        # Hook callbacks are invoked by WordPress, not statically.
+        - '#Action callback .* invoked#'
+        # WooCommerce/WordPress classes only present when the plugins are active.
+        -
+            identifier: class.notFound
+            path: wp-content/plugins/haramara-core/src/Woo/*

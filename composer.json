@@ -1,0 +1,79 @@
+{
+  "name": "haramara/site",
+  "description": "Haramara — WordPress site: repo-level PHP tooling plus Composer-managed WordPress plugins (WooCommerce, gateways, etc.) via wpackagist.",
+  "type": "project",
+  "license": "GPL-2.0-or-later",
+  "keywords": [
+    "wordpress",
+    "woocommerce",
+    "block-theme",
+    "wpackagist",
+    "coding-standards"
+  ],
+  "authors": [
+    {
+      "name": "Haramara — Agency Build",
+      "homepage": "https://haramara.mx/"
+    }
+  ],
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://wpackagist.org",
+      "only": [
+        "wpackagist-plugin/*",
+        "wpackagist-theme/*"
+      ]
+    }
+  ],
+  "require": {
+    "php": ">=8.3",
+    "composer/installers": "^2.2",
+    "wpackagist-plugin/restricted-site-access": "7.6.1",
+    "wpackagist-plugin/woocommerce": "10.9.4",
+    "wpackagist-plugin/woocommerce-gateway-stripe": "10.8.4"
+  },
+  "require-dev": {
+    "squizlabs/php_codesniffer": "^3.10",
+    "wp-coding-standards/wpcs": "^3.1",
+    "phpcompatibility/phpcompatibility-wp": "^2.1",
+    "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+    "phpstan/phpstan": "^1.12",
+    "php-stubs/wordpress-stubs": "^6.8",
+    "php-stubs/woocommerce-stubs": "^9.0"
+  },
+  "scripts": {
+    "lint": "phpcs -q --standard=phpcs.xml.dist",
+    "lint:fix": "phpcbf --standard=phpcs.xml.dist",
+    "analyze": "phpstan analyse --configuration=phpstan.neon.dist --memory-limit=3G",
+    "check": [
+      "@lint",
+      "@analyze"
+    ]
+  },
+  "scripts-descriptions": {
+    "lint": "Run WordPress/WooCommerce coding-standards checks (phpcs).",
+    "lint:fix": "Auto-fix fixable coding-standards violations (phpcbf).",
+    "analyze": "Run PHPStan static analysis (level 6) against the plugin source.",
+    "check": "Run lint + analyze together (CI gate)."
+  },
+  "extra": {
+    "installer-paths": {
+      "wp-content/plugins/{$name}/": ["type:wordpress-plugin"],
+      "wp-content/themes/{$name}/": ["type:wordpress-theme"],
+      "wp-content/mu-plugins/{$name}/": ["type:wordpress-muplugin"]
+    }
+  },
+  "config": {
+    "allow-plugins": {
+      "dealerdirect/phpcodesniffer-composer-installer": true,
+      "composer/installers": true
+    },
+    "platform": {
+      "php": "8.3.0"
+    },
+    "platform-check": false,
+    "sort-packages": true,
+    "optimize-autoloader": true
+  }
+}

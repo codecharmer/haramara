@@ -1,0 +1,53 @@
+<!-- wp:template-part {"slug":"header","area":"header","tagName":"header"} /-->
+
+<!-- wp:group {"tagName":"main","metadata":{"name":"Contenido principal"},"anchor":"hm-main","className":"hm-main","layout":{"type":"default"}} -->
+<main id="hm-main" class="wp-block-group hm-main">
+	<!-- wp:group {"align":"full","backgroundColor":"carbon","className":"hm-band hm-page-head hm-archive-header","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|xxl","bottom":"var:preset|spacing|xl"}}}} -->
+	<div class="wp-block-group alignfull hm-band hm-page-head hm-archive-header has-carbon-background-color has-background" style="padding-top:var(--wp--preset--spacing--xxl);padding-bottom:var(--wp--preset--spacing--xl)">
+		<!-- wp:group {"className":"hm-head","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+		<div class="wp-block-group hm-head">
+			<!-- wp:heading {"level":1,"fontSize":"xxl"} -->
+			<h1 class="wp-block-heading has-xxl-font-size">Diario</h1>
+			<!-- /wp:heading -->
+			<!-- wp:paragraph {"className":"hm-lede"} -->
+			<p class="hm-lede">Notas de café, fermentación y oficio desde la barra.</p>
+			<!-- /wp:paragraph -->
+		</div>
+		<!-- /wp:group -->
+	</div>
+	<!-- /wp:group -->
+
+	<!-- wp:query {"queryId":0,"query":{"perPage":9,"pages":0,"offset":0,"postType":"post","order":"desc","orderBy":"date","inherit":true},"className":"hm-posts","layout":{"type":"constrained"},"style":{"spacing":{"padding":{"top":"var:preset|spacing|xl"}}}} -->
+	<div class="wp-block-query hm-posts" style="padding-top:var(--wp--preset--spacing--xl)">
+		<!-- wp:post-template {"className":"hm-posts__grid","layout":{"type":"grid","minimumColumnWidth":"18rem"},"style":{"spacing":{"blockGap":"var:preset|spacing|lg"}}} -->
+			<!-- wp:group {"className":"hm-postcard hm-reveal","style":{"spacing":{"blockGap":"0"}},"layout":{"type":"default"}} -->
+			<div class="wp-block-group hm-postcard hm-reveal">
+				<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"4/3"} /-->
+				<!-- wp:post-date {"fontSize":"sm"} /-->
+				<!-- wp:post-title {"level":2,"isLink":true,"fontSize":"lg"} /-->
+				<!-- wp:post-excerpt {"moreText":"Seguir leyendo","excerptLength":22} /-->
+			</div>
+			<!-- /wp:group -->
+		<!-- /wp:post-template -->
+
+		<!-- wp:query-pagination {"className":"hm-pagination","layout":{"type":"flex","justifyContent":"center"},"style":{"spacing":{"margin":{"top":"var:preset|spacing|xl"}}}} -->
+			<!-- wp:query-pagination-previous {"label":"Anterior"} /-->
+			<!-- wp:query-pagination-numbers /-->
+			<!-- wp:query-pagination-next {"label":"Siguiente"} /-->
+		<!-- /wp:query-pagination -->
+
+		<!-- wp:query-no-results -->
+			<!-- wp:paragraph {"align":"center","fontSize":"md"} -->
+			<p class="has-text-align-center has-md-font-size">Aún no hay entradas. Vuelve pronto.</p>
+			<!-- /wp:paragraph -->
+		<!-- /wp:query-no-results -->
+	</div>
+	<!-- /wp:query -->
+
+	<!-- wp:spacer {"height":"var:preset|spacing|xxl"} -->
+	<div style="height:var(--wp--preset--spacing--xxl)" aria-hidden="true" class="wp-block-spacer"></div>
+	<!-- /wp:spacer -->
+</main>
+<!-- /wp:group -->
+
+<!-- wp:template-part {"slug":"footer","area":"footer","tagName":"footer"} /-->

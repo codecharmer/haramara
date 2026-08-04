@@ -1,0 +1,28 @@
+{
+  "name": "@haramara/theme",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Haramara block theme — @wordpress/scripts build pipeline for future compiled SCSS/JS. Runtime CSS/JS shipped by the theme team lives hand-authored in assets/.",
+  "author": "Haramara Café — Agency Build",
+  "license": "GPL-2.0-or-later",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
+  "scripts": {
+    "build": "wp-scripts build src/js/index.js src/scss/index.scss --output-path=assets/build",
+    "start": "wp-scripts start src/js/index.js src/scss/index.scss --output-path=assets/build",
+    "lint:js": "wp-scripts lint-js src/js",
+    "lint:css": "wp-scripts lint-style \"src/scss/**/*.scss\"",
+    "lint:pkg-json": "wp-scripts lint-pkg-json",
+    "format": "wp-scripts format src/js src/scss",
+    "packages-update": "wp-scripts packages-update"
+  },
+  "stylelint": {
+    "extends": "@wordpress/stylelint-config/scss"
+  },
+  "devDependencies": {
+    "@wordpress/scripts": "^30.0.0",
+    "@wordpress/stylelint-config": "^23.0.0"
+  }
+}

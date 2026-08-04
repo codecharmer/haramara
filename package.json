@@ -1,0 +1,38 @@
+{
+  "name": "haramara",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Haramara Café — WordPress commerce engine (block theme + haramara-core plugin); Expo customer + POS apps arrive in the app phase. Root workspace: tooling, local dev, and asset builds.",
+  "author": "Haramara Café — Agency Build",
+  "license": "GPL-2.0-or-later",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
+  "workspaces": [
+    "wp-content/themes/haramara",
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspace=wp-content/themes/haramara",
+    "start": "npm run start --workspace=wp-content/themes/haramara",
+    "lint:js": "npm run lint:js --workspace=wp-content/themes/haramara",
+    "lint:css": "npm run lint:css --workspace=wp-content/themes/haramara",
+    "lint": "npm run lint:js && npm run lint:css",
+    "format": "npm run format --workspace=wp-content/themes/haramara",
+    "env": "wp-env",
+    "env:start": "wp-env start",
+    "env:stop": "wp-env stop",
+    "env:clean": "wp-env clean all",
+    "env:cli": "wp-env run cli wp",
+    "env:install-content": "wp-env run cli wp haramara install",
+    "postinstall": "node -e \"console.log('\\n[haramara] Node deps installed. Next: composer install (PHP tooling), then npm run env:start to boot the local WordPress, then npm run build to compile theme SCSS/JS.')\"",
+    "app:customer": "npm run start --workspace=apps/customer",
+    "app:pos": "npm run start --workspace=apps/pos",
+    "typecheck:apps": "npm run typecheck --workspace=packages/api-client && npx tsc --noEmit -p apps/pos && npx tsc --noEmit -p apps/customer"
+  },
+  "devDependencies": {
+    "@wordpress/env": "^10.0.0"
+  }
+}

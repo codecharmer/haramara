@@ -1,0 +1,24 @@
+/**
+ * Haramara theme — compiled SCSS entry point.
+ *
+ * IMPORTANT: This is NOT the runtime stylesheet. The theme's production CSS is
+ * hand-authored by the theme team in `assets/css/*.css`
+ * (`theme.css`, `woocommerce.css`, `editor.css`) and enqueued directly from
+ * `inc/assets.php`. All design tokens come from `theme.json`
+ * (`--wp--preset--*` / `--wp--custom--*`), never hardcoded hex values.
+ *
+ * This entry exists so the `@wordpress/scripts` (Dart Sass) pipeline is ready
+ * the moment a feature warrants compiled/authored SCSS — partials, mixins,
+ * nesting — without retrofitting build config. Running `npm run build` compiles
+ * this to `assets/build/index.css`.
+ *
+ * Author SCSS against the same CSS custom properties the tokens emit, e.g.:
+ *
+ *   .haramara-example {
+ *     color: var(--wp--preset--color--crust);
+ *     padding-block: var(--wp--preset--spacing--lg);
+ *     border-radius: var(--wp--custom--radius--md);
+ *   }
+ */
+
+// Intentionally no rules yet — see the header note above.

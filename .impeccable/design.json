@@ -1,0 +1,159 @@
+{
+	"schemaVersion": 2,
+	"generatedAt": "2026-08-04T00:00:00Z",
+	"title": "Design System: Haramara",
+	"extensions": {
+		"colorMeta": {
+			"carbon": { "role": "neutral", "displayName": "Carbón", "canonical": "oklch(18.0% 0.004 48.5)", "tonalRamp": ["#0d0b0a", "#272423", "#444140", "#63615f", "#848280", "#a7a4a3", "#cbc8c7", "#f1eeec"] },
+			"alba": { "role": "neutral", "displayName": "Alba", "canonical": "oklch(21.1% 0.006 236.9)", "tonalRamp": ["#090c0d", "#222628", "#3f4245", "#5e6264", "#7f8385", "#a2a6a8", "#c6cacd", "#ebeff2"] },
+			"char": { "role": "neutral", "displayName": "Madera quemada", "canonical": "oklch(21.7% 0.009 59.2)", "tonalRamp": ["#0e0a08", "#282421", "#46413e", "#65605c", "#86817d", "#a9a4a0", "#cec8c4", "#f3ede9"] },
+			"espresso": { "role": "neutral", "displayName": "Espresso", "canonical": "oklch(23.7% 0.016 62.6)", "tonalRamp": ["#100a05", "#2b231d", "#48403a", "#685f58", "#898079", "#aca39b", "#d1c7bf", "#f6ece4"] },
+			"ocaso": { "role": "neutral", "displayName": "Ocaso", "canonical": "oklch(22.5% 0.021 69.8)", "tonalRamp": ["#110a03", "#2c231a", "#494036", "#695f55", "#8b8075", "#aea397", "#d2c7bb", "#f8ece0"] },
+			"noche": { "role": "neutral", "displayName": "Noche", "canonical": "oklch(15.5% 0.004 84.6)", "tonalRamp": ["#0c0b09", "#262523", "#43423f", "#62615e", "#83827f", "#a6a5a2", "#cac9c6", "#f0eeeb"] },
+			"walnut": { "role": "neutral", "displayName": "Nogal", "canonical": "oklch(33.5% 0.032 60.5)", "tonalRamp": ["#150801", "#302115", "#4f3e31", "#6f5d4f", "#917e70", "#b4a192", "#d9c5b5", "#ffeada"] },
+			"smoke": { "role": "neutral", "displayName": "Humo", "canonical": "oklch(68.4% 0.026 79.7)", "tonalRamp": ["#110a01", "#2c2417", "#494133", "#696051", "#8b8171", "#aea493", "#d2c8b7", "#f8eddc"] },
+			"limestone": { "role": "neutral", "displayName": "Caliza", "canonical": "oklch(84.9% 0.023 78.2)", "tonalRamp": ["#100a02", "#2b2418", "#494134", "#696053", "#8a8173", "#ada495", "#d2c8b9", "#f7edde"] },
+			"bone": { "role": "neutral", "displayName": "Hueso", "canonical": "oklch(93.3% 0.018 81.3)", "tonalRamp": ["#0f0a04", "#29241b", "#474138", "#666056", "#888177", "#aba499", "#cfc8bd", "#f5eee2"] },
+			"clay": { "role": "secondary", "displayName": "Barro", "canonical": "oklch(69.9% 0.086 52.7)", "tonalRamp": ["#230000", "#431400", "#65330d", "#87522f", "#ab7350", "#d19672", "#f7ba95", "#ffdfb9"] },
+			"olive": { "role": "secondary", "displayName": "Oliva", "canonical": "oklch(68.0% 0.048 107.6)", "tonalRamp": ["#0e0c00", "#272707", "#444425", "#646343", "#858564", "#a8a885", "#cccca8", "#f1f1cd"] },
+			"brass": { "role": "primary", "displayName": "Latón", "canonical": "oklch(74.0% 0.091 81.3)", "tonalRamp": ["#1d0300", "#3b1d00", "#5a3b00", "#7b5b18", "#9e7c3e", "#c29f60", "#e7c484", "#ffe9a8"] },
+			"brass-soft": { "role": "primary", "displayName": "Latón claro", "canonical": "oklch(83.1% 0.078 83.8)", "tonalRamp": ["#1a0500", "#372000", "#563e00", "#765d28", "#997e49", "#bca16b", "#e1c58e", "#ffebb3"] }
+		},
+		"typographyMeta": {
+			"display": { "displayName": "Display", "purpose": "Hero headline only; max 12ch, balanced. Rescopes to headline size on viewports under 900px height." },
+			"headline": { "displayName": "Headline (h2)", "purpose": "Section headings; also brew-ladder tier names (uppercase, 0.06em)." },
+			"title": { "displayName": "Title (h3)", "purpose": "Sub-sections, event dates, first-person voice lines (hm-voz at 1.18)." },
+			"body": { "displayName": "Body", "purpose": "All prose; 64ch measure. Ledes use md size × 1.5 at weight 340, 44-46ch." },
+			"lede": { "displayName": "Lede", "purpose": "Opening paragraphs under headings; Petrona 340 at md size." },
+			"label": { "displayName": "Label", "purpose": "Buttons and underline links, uppercase 0.18em. Nav 0.14em, station labels 0.22em, site title 0.32em." }
+		},
+		"shadows": [
+			{ "name": "abismo", "value": "0 34px 70px -30px rgba(0,0,0,0.72)", "purpose": "The cave's darkness under photography: framed images and the brand seal only. Never on containers." },
+			{ "name": "filete", "value": "inset 0 0 0 1px rgba(239,232,220,0.14)", "purpose": "Inset bone hairline that draws an edge without a border; framed images and hairline groups." },
+			{ "name": "brasa", "value": "0 18px 60px -24px rgba(200,165,102,0.28)", "purpose": "Brass ember-glow lift. In the token vocabulary (theme.json) but not yet applied by any built surface; reserved." }
+		],
+		"gradients": [
+			{ "name": "scrim-foto", "value": "linear-gradient(180deg, rgba(13,12,10,0.10) 0%, rgba(13,12,10,0.28) 46%, rgba(13,12,10,0.86) 100%)", "purpose": "Bottom-seating scrim over full-bleed photography." },
+			{ "name": "scrim-lateral", "value": "linear-gradient(96deg, rgba(13,12,10,0.86) 0%, rgba(13,12,10,0.55) 38%, rgba(13,12,10,0.18) 66%, rgba(13,12,10,0.02) 90%)", "purpose": "Left-seating scrim for the hero's low-left text stack." },
+			{ "name": "vela", "value": "radial-gradient(120% 85% at 50% 100%, rgba(200,165,102,0.14) 0%, rgba(200,165,102,0.05) 38%, rgba(200,165,102,0) 62%)", "purpose": "Candlelight band behind closing CTAs (hm-band--vela)." },
+			{ "name": "alba-fade", "value": "linear-gradient(180deg, #16191B 0%, #131110 100%)", "purpose": "Morning ground blend, alba into carbon." },
+			{ "name": "ocaso-fade", "value": "linear-gradient(180deg, #221A11 0%, #0D0C0A 100%)", "purpose": "Golden hour into night, ocaso into noche." }
+		],
+		"motion": [
+			{ "name": "duration-fast", "value": "200ms", "purpose": "Link and underline-button transitions." },
+			{ "name": "duration-base", "value": "450ms", "purpose": "Header state changes." },
+			{ "name": "duration-slow", "value": "900ms", "purpose": "Reveal grammar entrances." },
+			{ "name": "ease-standard", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "The only easing curve; every transition uses it." },
+			{ "name": "reveal-stagger", "value": "120ms", "purpose": "Per-sibling delay inside hm-reveal-group, up to 480ms." },
+			{ "name": "cover-settle", "value": "2600ms", "purpose": "Cover photography scale-settle from 1.045 to 1." },
+			{ "name": "warmth-veil", "value": "opacity 600ms linear; --hm-warmth = scrollProgress^1.5, alpha ceiling 0.2", "purpose": "The daylight arc veil; deliberately subtle; removed under reduced motion." }
+		],
+		"breakpoints": [
+			{ "name": "station-tight", "value": "599px" },
+			{ "name": "desktop", "value": "782px" },
+			{ "name": "hero-short", "value": "900px (max-height)" }
+		]
+	},
+	"components": [
+		{
+			"name": "Ghost Button",
+			"kind": "button",
+			"refersTo": "button-ghost",
+			"description": "The default action: brass stroke on nothing, inverting to brass fill with noche text.",
+			"html": "<button class=\"ds-btn-ghost\">Ordenar para recoger</button>",
+			"css": ".ds-btn-ghost { background: transparent; border: 1px solid #C8A566; color: #C8A566; border-radius: 0; padding: 0.95rem 1.9rem; font-family: Petrona, Georgia, serif; font-weight: 500; font-size: 0.875rem; letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; transition: background 200ms cubic-bezier(0.16,1,0.3,1), color 200ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-ghost:hover, .ds-btn-ghost:focus-visible { background: #C8A566; color: #0D0C0A; } .ds-btn-ghost:focus-visible { outline: 2px solid #C8A566; outline-offset: 3px; } .ds-btn-ghost:active { background: #E0C48D; color: #0D0C0A; }"
+		},
+		{
+			"name": "Solid Brass Button",
+			"kind": "button",
+			"refersTo": "button-solid",
+			"description": "The single decisive action on commerce screens.",
+			"html": "<button class=\"ds-btn-solid\">Pagar pedido</button>",
+			"css": ".ds-btn-solid { background: #C8A566; border: 1px solid #C8A566; color: #0D0C0A; border-radius: 0; padding: 0.95rem 1.9rem; font-family: Petrona, Georgia, serif; font-weight: 500; font-size: 0.875rem; letter-spacing: 0.18em; text-transform: uppercase; cursor: pointer; transition: background 200ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-solid:hover, .ds-btn-solid:focus-visible { background: #E0C48D; border-color: #E0C48D; } .ds-btn-solid:focus-visible { outline: 2px solid #C8A566; outline-offset: 3px; }"
+		},
+		{
+			"name": "Underline Link Button",
+			"kind": "button",
+			"refersTo": "button-link-underline",
+			"description": "Boxless secondary action: limestone over a strong hairline, warming to soft brass.",
+			"html": "<button class=\"ds-btn-underline\">Cómo llegar</button>",
+			"css": ".ds-btn-underline { background: none; border: 0; padding: 0.2rem 0; color: #D6CCBD; text-transform: uppercase; letter-spacing: 0.18em; font-family: Petrona, Georgia, serif; font-weight: 500; font-size: 0.875rem; cursor: pointer; box-shadow: inset 0 -1px 0 rgba(239,232,220,0.26); transition: box-shadow 200ms cubic-bezier(0.16,1,0.3,1), color 200ms cubic-bezier(0.16,1,0.3,1); } .ds-btn-underline:hover, .ds-btn-underline:focus-visible { color: #E0C48D; box-shadow: inset 0 -1px 0 #E0C48D; } .ds-btn-underline:focus-visible { outline: 2px solid #C8A566; outline-offset: 3px; }"
+		},
+		{
+			"name": "Input Field",
+			"kind": "input",
+			"refersTo": "input-field",
+			"description": "Char well with hairline edge; focus swaps the edge to brass with a 1px ring.",
+			"html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Tu nombre\" />",
+			"css": ".ds-input { background: #1D1916; border: 1px solid rgba(239,232,220,0.14); border-radius: 0; color: #EFE8DC; padding: 0.85rem 1rem; font-family: Petrona, Georgia, serif; font-size: 1.0625rem; } .ds-input::placeholder { color: #A29888; opacity: 1; } .ds-input:focus { border-color: #C8A566; outline: none; box-shadow: 0 0 0 1px #C8A566; }"
+		},
+		{
+			"name": "Timeline Station",
+			"kind": "custom",
+			"description": "The signature hour marker: hairline, brass Italiana hour, smoke uppercase label, hairline. Information-carrying (real hours), z-index 3, never covered.",
+			"html": "<div class=\"ds-station\"><span class=\"ds-station-hour\">09:30</span><span class=\"ds-station-label\">El horno</span></div>",
+			"css": ".ds-station { display: flex; align-items: center; gap: 1.75rem; width: 100%; position: relative; z-index: 3; } .ds-station::before, .ds-station::after { content: \"\"; flex: 1 1 0; height: 1px; background: rgba(239,232,220,0.14); } .ds-station-hour { font-family: Italiana, 'Times New Roman', serif; font-size: 1.75rem; line-height: 1; color: #C8A566; letter-spacing: 0.08em; white-space: nowrap; } .ds-station-label { font-family: Petrona, Georgia, serif; font-size: 0.875rem; letter-spacing: 0.22em; text-transform: uppercase; color: #A29888; white-space: nowrap; }"
+		},
+		{
+			"name": "Carta Row",
+			"kind": "custom",
+			"description": "Menu line: bone name, dotted smoke leader on the baseline, tabular limestone price.",
+			"html": "<div class=\"ds-carta-row\"><p class=\"ds-carta-name\">Filtrado · Funky</p><p class=\"ds-carta-leader\"></p><p class=\"ds-carta-price\">$120</p></div>",
+			"css": ".ds-carta-row { display: flex; align-items: flex-end; gap: 0.9rem; padding: 0.7rem 0; font-family: Petrona, Georgia, serif; } .ds-carta-row p { margin: 0; } .ds-carta-name { font-weight: 460; color: #EFE8DC; } .ds-carta-leader { flex: 1 1 0; align-self: flex-end; border-bottom: 1px dotted rgba(162,152,136,0.45); transform: translateY(-0.34em); min-width: 2rem; } .ds-carta-price { font-variant-numeric: tabular-nums; color: #D6CCBD; white-space: nowrap; }"
+		},
+		{
+			"name": "Brew Ladder Tier",
+			"kind": "custom",
+			"description": "Filtrados tier: Italiana 2XL uppercase name (limestone/clay/brass by tier), smoke description, tabular bone price, hairline-ruled.",
+			"html": "<div class=\"ds-ladder-tier\"><p class=\"ds-ladder-name\">Funky</p><p class=\"ds-ladder-desc\">Fermentaciones extendidas y perfiles salvajes; para quien ya anda buscando el borde.</p><p class=\"ds-ladder-price\">$120</p></div>",
+			"css": ".ds-ladder-tier { display: grid; grid-template-columns: minmax(13rem,1fr) 2fr auto; gap: 0.4rem 2.5rem; padding: 2.5rem 0; border-top: 1px solid rgba(239,232,220,0.14); border-bottom: 1px solid rgba(239,232,220,0.14); align-items: baseline; font-family: Petrona, Georgia, serif; } .ds-ladder-tier p { margin: 0; } .ds-ladder-name { font-family: Italiana, 'Times New Roman', serif; font-size: 3.5rem; line-height: 1; letter-spacing: 0.06em; text-transform: uppercase; color: #C8A566; } .ds-ladder-desc { color: #A29888; max-width: 46ch; } .ds-ladder-price { font-variant-numeric: tabular-nums; font-size: 1.3125rem; color: #EFE8DC; justify-self: end; }"
+		},
+		{
+			"name": "Evento Row",
+			"kind": "custom",
+			"description": "Event/loyalty row: brass Italiana date column spanning two rows beside bone title and smoke detail.",
+			"html": "<div class=\"ds-evento\"><p class=\"ds-evento-fecha\">14</p><p class=\"ds-evento-titulo\">Cata de filtrados de temporada</p><p class=\"ds-evento-detalle\">Sábado · 17:00 · en la barra</p></div>",
+			"css": ".ds-evento { display: grid; grid-template-columns: 3.6rem 1fr; gap: 0.35rem 2.5rem; padding: 1.5rem 0; border-bottom: 1px solid rgba(239,232,220,0.14); align-items: baseline; font-family: Petrona, Georgia, serif; } .ds-evento p { margin: 0; } .ds-evento-fecha { font-family: Italiana, 'Times New Roman', serif; font-size: 2.5rem; line-height: 1; color: #C8A566; grid-row: span 2; } .ds-evento-titulo { color: #EFE8DC; font-weight: 460; } .ds-evento-detalle { grid-column: 2; color: #A29888; font-size: 0.875rem; }"
+		}
+	],
+	"narrative": {
+		"northStar": "El Día de Haramara (The Café's Actual Day)",
+		"overview": "Haramara's visual world is a hidden candlelit bar rendered in matte warm blacks. Five near-black grounds — carbon, alba, char, espresso, ocaso, settling into noche — carry warm off-white text (limestone, bone) and one metallic voice: brass, which appears only where light would fall. The homepage is not a marketing page; it is the café's actual working day, 08:00–20:00, told as six real hours with hairline \"station\" rules marking each one. Structure is drawn, never boxed: 1px hairlines, dotted menu leaders, a single brass plumb line — no cards, no fills, no rounded containers. The material character comes from the café itself: Shou Sugi Ban charred wood, stone, brass, linen, candlelight. Photography is real, cinematic, and low-light — shot at the café, never stock, never generated. A fixed candle-glow veil (--hm-warmth) warms the page as the visitor scrolls through the day; it is deliberately faint (0.2 alpha ceiling, eased to the second half of the scroll) and disappears entirely under reduced motion. Confirmed anti-references: trendy coffee shop, startup; never bright saturated colors.",
+		"keyCharacteristics": [
+			"Five matte warm blacks as section grounds, sequenced like daylight fading; never pure #000.",
+			"Brass as light, not decoration: hour numerals, hairlines, focus rings, the candle veil, the one action.",
+			"Italiana display (one weight) over Petrona text (variable weight); hierarchy by size, never by boldness.",
+			"Square corners, hairline structure, dotted leaders — no boxed cards anywhere.",
+			"One page-wide motion grammar: rise-and-unblur reveals, light-only cover fades, slow scale-settle imagery.",
+			"WCAG AA on dark grounds is a standing requirement, not an aspiration."
+		],
+		"rules": [
+			{ "name": "The Brass Is Light Rule", "body": "Brass appears only where light would fall: hour numerals, hairlines, focus rings, the veil, and the single decisive action per screen. Text on a brass fill is always noche (#0D0C0A) — never bone; bone-on-brass fails AA.", "section": "colors" },
+			{ "name": "The Warm Black Ladder Rule", "body": "Every section sits on one of the named grounds (alba → carbon → char/espresso → ocaso → noche), sequenced to the hour of day it represents. No pure black, no cool greys, no light-mode surfaces.", "section": "colors" },
+			{ "name": "The Hairline Rule", "body": "Structural lines are 1px of bone at low alpha — rgba(239,232,220,0.14) for structure, 0.26 for interactive underlines. Dotted leaders use smoke at 0.45.", "section": "colors" },
+			{ "name": "The Size, Not Weight Rule", "body": "Italiana exists at one weight; hierarchy is expressed by scale and color, never by bolding. In Petrona, weight moves only within 340–500 (340 ledes/quotes, 380 body, 460 item names, 500 labels).", "section": "typography" },
+			{ "name": "The Tabular Price Rule", "body": "Every price is set in font-variant-numeric: tabular-nums (carta rows in limestone, ladder prices in bone) so columns of pesos align like a printed menu.", "section": "typography" },
+			{ "name": "The Station Rule", "body": "Hour stations are data, not decoration: real opening hours, z-index: 3, and nothing — not even lifted overlap media — may cover them.", "section": "layout" },
+			{ "name": "The First Viewport Contract", "body": "Headline, lede, one primary action, and the hours line all render inside the initial viewport, complete, at every screen size. Short viewports trade a step of display scale, never a member of the stack.", "section": "layout" },
+			{ "name": "The Flat World Rule", "body": "No container ever casts a shadow. Shadows exist only beneath photography (abismo) and as drawn hairline edges (filete). Depth between sections is a change of ground, not an elevation change.", "section": "elevation" },
+			{ "name": "The Candle Ceiling Rule", "body": "The daylight veil is deliberately subtle: 0.2 alpha at full warmth, eased by progress^1.5, removed entirely under prefers-reduced-motion. Do not \"fix\" its faintness.", "section": "elevation" },
+			{ "name": "The Square Corner Rule", "body": "If it has corners, they are square. The only circle in the world is the seal — the hand-drawn gold flame in its brass ring.", "section": "shapes" }
+		],
+		"dos": [
+			"Do use only real café photography — the cinematic low-light images shot at Haramara (pour, celosía kombucha, interior, pastry plates). The brand seal is the gold flame logo raster, circular, never redrawn.",
+			"Do put real information in structural type: station rows carry actual opening hours, carta rows carry actual MXN prices in tabular figures, the hero's hours line is the true schedule (Miércoles a lunes · 8:00–20:00).",
+			"Do draw structure with hairlines (rgba(239,232,220,0.14)) and dotted leaders; separate sections by changing the ground color, not by boxing content.",
+			"Do keep noche (#0D0C0A) as the text color on every brass fill, and verify WCAG AA for every new pair on the dark grounds (smoke on carbon = 6.9:1 is the dimmest sanctioned body pair).",
+			"Do route every entrance through the one reveal grammar (900ms rise-and-unblur, 120ms stagger) and give reduced-motion users the complete static page.",
+			"Do treat theme.json as the single source of truth for tokens — four hand-synced copies exist in the wider monorepo; change tokens there first and propagate."
+		],
+		"donts": [
+			"Don't box content in cards, panels, or filled containers — no card grids, no container shadows, no rounded corners anywhere (radius tokens are 0).",
+			"Don't add decorative kickers or eyebrow labels. The station row silhouette is reserved for information-carrying hours; a label with nothing to say does not get the treatment.",
+			"Don't introduce bright saturated color, cool greys, pure black, or any light-mode surface. New accents come from the material palette (clay, olive) or nowhere.",
+			"Don't intensify the candle veil past its 0.2 alpha ceiling or linearize its progress^1.5 easing — its faintness is a recorded intent, not an oversight.",
+			"Don't design or build reservations UI in any form — an owner decision, not a deferral.",
+			"Don't hardcode menu content into templates or styles — specials rotate monthly; the menu is editorial content flowing through the carta and ladder components."
+		]
+	}
+}

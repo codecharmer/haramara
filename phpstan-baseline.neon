@@ -1,0 +1,141 @@
+parameters:
+	ignoreErrors:
+		-
+			message: "#^Method Haramara\\\\Core\\\\Admin\\\\Dashboard\\:\\:render_low_stock\\(\\) has parameter \\$products with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Admin/Dashboard.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Admin\\\\Dashboard\\:\\:render_pickups_table\\(\\) has parameter \\$orders with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Admin/Dashboard.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Admin\\\\Dashboard\\:\\:render_recent_sms\\(\\) has parameter \\$rows with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Admin/Dashboard.php
+
+		-
+			message: "#^Call to static method add_command\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 5
+			path: wp-content/plugins/haramara-core/src/Cli/Commands.php
+
+		-
+			message: "#^Call to static method error\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 2
+			path: wp-content/plugins/haramara-core/src/Cli/Commands.php
+
+		-
+			message: "#^Call to static method line\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 13
+			path: wp-content/plugins/haramara-core/src/Cli/Commands.php
+
+		-
+			message: "#^Call to static method success\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 5
+			path: wp-content/plugins/haramara-core/src/Cli/Commands.php
+
+		-
+			message: "#^Call to static method warning\\(\\) on an unknown class WP_CLI\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Cli/Commands.php
+
+		-
+			message: "#^Property WP\\:\\:\\$request \\(string\\) in isset\\(\\) is not nullable\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Seo/MetaTags.php
+
+		-
+			message: "#^Property WP\\:\\:\\$request \\(string\\) in isset\\(\\) is not nullable\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Seo/SchemaGraph.php
+
+		-
+			message: "#^Constant HOUR_IN_SECONDS not found\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Activator.php
+
+		-
+			message: "#^Call to function is_wp_error\\(\\) with int will always evaluate to false\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Installer.php
+
+		-
+			message: "#^Constant HARAMARA_CORE_DIR not found\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Installer.php
+
+		-
+			message: "#^Constant OBJECT not found\\.$#"
+			count: 5
+			path: wp-content/plugins/haramara-core/src/Setup/Installer.php
+
+		-
+			message: "#^Parameter \\#1 \\$args of function get_posts expects array\\{numberposts\\?\\: int, category\\?\\: int\\|string, include\\?\\: array\\<int\\>, exclude\\?\\: array\\<int\\>, suppress_filters\\?\\: bool, attachment_id\\?\\: int, author\\?\\: int\\|string, author_name\\?\\: string, \\.\\.\\.\\}\\|null, array\\{post_type\\: 'attachment'\\|'page'\\|'product'\\|'wp_navigation', post_status\\: 'any', numberposts\\: \\-1, fields\\: 'ids', meta_key\\: '_haramara_seeded'\\|'_haramara_seeded…', meta_value\\: 1\\} given\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Installer.php
+
+		-
+			message: "#^Constant HARAMARA_CORE_DIR not found\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/MediaImporter.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Setup\\\\Settings\\:\\:checkbox_row\\(\\) has parameter \\$values with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Settings.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Setup\\\\Settings\\:\\:number_row\\(\\) has parameter \\$values with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Settings.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Setup\\\\Settings\\:\\:render_business\\(\\) has parameter \\$v with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Settings.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Setup\\\\Settings\\:\\:render_pickup\\(\\) has parameter \\$v with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Settings.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Setup\\\\Settings\\:\\:render_seo\\(\\) has parameter \\$v with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Settings.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Setup\\\\Settings\\:\\:render_sms\\(\\) has parameter \\$v with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Settings.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Setup\\\\Settings\\:\\:secret_row\\(\\) has parameter \\$values with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Settings.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Setup\\\\Settings\\:\\:text_row\\(\\) has parameter \\$values with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Settings.php
+
+		-
+			message: "#^Method Haramara\\\\Core\\\\Setup\\\\Settings\\:\\:textarea_row\\(\\) has parameter \\$values with no value type specified in iterable type array\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Setup/Settings.php
+
+		-
+			message: "#^Constant ARRAY_A not found\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Sms/Logger.php
+
+		-
+			message: "#^Constant DAY_IN_SECONDS not found\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Sms/Logger.php
+
+		-
+			message: "#^Constant HOUR_IN_SECONDS not found\\.$#"
+			count: 1
+			path: wp-content/plugins/haramara-core/src/Sms/Logger.php
