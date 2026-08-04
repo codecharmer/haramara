@@ -56,3 +56,7 @@ wp-content/plugins/*/
 # === Expo apps ===
 .expo/
 apps/*/dist/
+
+# === Claude Code local settings ===
+.claude/settings.local.json
+.claude/worktrees/

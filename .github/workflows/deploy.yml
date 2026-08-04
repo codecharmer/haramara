@@ -1,0 +1,232 @@
+name: Deploy WordPress Site to VPS
+
+on:
+  push:
+    branches:
+      - master
+
+  workflow_dispatch:
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy WordPress theme and plugins
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    env:
+      # Repo-relative paths. Source and destination are identical, and only
+      # these directories are ever written to or pruned on the server.
+      WP_PATHS: "wp-content/themes/haramara wp-content/plugins/woocommerce wp-content/plugins/woocommerce-gateway-stripe wp-content/plugins/haramara-core"
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Install WordPress plugins via Composer (wpackagist)
+        run: |
+          # Third-party plugins are Composer-managed and git-ignored, so they are
+          # absent from the checkout. Materialise them into wp-content/plugins/
+          # from the committed composer.lock before anything is rsynced. Only runs
+          # when the root manifest actually declares wpackagist plugins.
+          if [ -f composer.json ] && grep -q '"wpackagist-plugin/' composer.json; then
+            composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+          else
+            echo "No wpackagist plugins declared at root; skipping."
+          fi
+
+      - name: Install PHP dependencies (production only)
+        run: |
+          for SRC in $WP_PATHS; do
+            [ -f "$SRC/composer.json" ] || continue
+            # Skip prebuilt third-party plugins: wpackagist/wp.org releases ship
+            # their own vendor/, so running composer inside them is wrong. Only our
+            # own packages (no committed vendor/) need their autoloader built here.
+            if [ -d "$SRC/vendor" ]; then
+              echo "skip prebuilt (ships vendor/) $SRC"
+              continue
+            fi
+            echo "composer install for $SRC"
+            ( cd "$SRC" && composer install --no-dev --optimize-autoloader --no-interaction --no-progress ) \
+              || echo "composer step failed for $SRC; continuing (autoloader fallback)"
+          done
+
+      - name: Set up SSH
+        run: |
+          mkdir -p ~/.ssh
+
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          echo "${{ secrets.SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Test SSH connection
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "whoami && hostname"
+
+      - name: Bootstrap WordPress core (only when absent)
+        run: |
+          ssh -i ~/.ssh/deploy_key             -o IdentitiesOnly=yes             -p "${{ secrets.SSH_PORT }}"             "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}"             "set -e
+             DP='${{ secrets.DEPLOY_PATH }}'
+             if [ -f \"\$DP/wp-config.php\" ]; then
+               echo 'WordPress already installed; skipping bootstrap.'
+               exit 0
+             fi
+             command -v wp >/dev/null 2>&1 || { echo 'wp-cli is required on the server for --wp-bootstrap'; exit 1; }
+             mkdir -p \"\$DP\"
+             # Bundled wp-cli builds (e.g. cPanel WP Toolkit) can ship a low PHP
+             # memory limit; raise it for every wp call in this step.
+             export WP_CLI_PHP_ARGS='-d memory_limit=512M'
+             WP=\"wp --path=\$DP --allow-root\"
+
+             echo 'Downloading WordPress core...'
+             # Prefer curl+tar: 'wp core download' extracts in PHP and dies on a
+             # 128M limit. This path uses no PHP at all. Core is fetched in
+             # en_US and the locale is applied below via the language pack.
+             if command -v curl >/dev/null 2>&1 && command -v tar >/dev/null 2>&1; then
+               curl -fsSL https://wordpress.org/latest.tar.gz | tar -xz --strip-components=1 -C \"\$DP\"
+             else
+               \$WP core download
+             fi
+             test -f \"\$DP/wp-settings.php\" || { echo 'WordPress core files missing after download'; exit 1; }
+
+             echo 'Writing wp-config.php...'
+             \$WP config create                --dbname='${{ secrets.WP_DB_NAME }}'                --dbuser='${{ secrets.WP_DB_USER }}'                --dbpass='${{ secrets.WP_DB_PASSWORD }}'                --dbhost='${{ secrets.WP_DB_HOST }}'                --locale='es_MX'                --skip-check
+
+             echo 'Installing WordPress...'
+             \$WP core install                --url='https://haramara.cafe'                --title='Haramara Café'                --admin_user='admin'                --admin_password='${{ secrets.WP_ADMIN_PASSWORD }}'                --admin_email='codecharmer@codecharmer.io'                --skip-email
+
+             if [ 'es_MX' != 'en_US' ]; then
+               \$WP language core install 'es_MX' || true
+               \$WP site switch-language 'es_MX' || true
+             fi
+
+             for SLUG in ; do
+               echo \"Installing plugin \$SLUG...\"
+               \$WP plugin install \"\$SLUG\" --activate || echo \"WARN: could not install \$SLUG\"
+               \$WP language plugin install \"\$SLUG\" 'es_MX' || true
+             done
+
+             \$WP rewrite structure '/%postname%/' --hard || true
+             chown -R haramara:haramara \"\$DP\"
+             echo 'WordPress bootstrap complete.'"
+
+      - name: Verify WordPress install at deploy path
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "test -f '${{ secrets.DEPLOY_PATH }}/wp-config.php' || { echo 'No wp-config.php at ${{ secrets.DEPLOY_PATH }} — install WordPress there, or re-run setup with --wp-bootstrap.'; exit 1; }"
+
+      - name: Deploy theme and plugins
+        run: |
+          for SRC in $WP_PATHS; do
+            if [ ! -d "$SRC" ]; then
+              echo "Skipping missing $SRC"
+              continue
+            fi
+            echo "Deploying $SRC"
+            ssh -i ~/.ssh/deploy_key \
+              -o IdentitiesOnly=yes \
+              -p "${{ secrets.SSH_PORT }}" \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+              "mkdir -p '${{ secrets.DEPLOY_PATH }}/$SRC'"
+
+            # --delete is safe here: it is scoped to this theme/plugin folder,
+            # so uploads, wp-config.php and core are never candidates.
+            rsync -az --delete \
+              --exclude='.git/' \
+              --exclude='.github/' \
+              --exclude='node_modules/' \
+              --exclude='.DS_Store' \
+              --exclude='*.log' \
+              --exclude='.wp-env.json' \
+              --exclude='.wp-env.override.json' \
+              -e "ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -p ${{ secrets.SSH_PORT }}" \
+              "$SRC/" \
+              "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ secrets.DEPLOY_PATH }}/$SRC/"
+          done
+
+      - name: Fix ownership and permissions
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "for D in $WP_PATHS; do P=\"${{ secrets.DEPLOY_PATH }}/\$D\"; [ -d \"\$P\" ] || continue; chown -R haramara:haramara \"\$P\"; find \"\$P\" -type d -exec chmod 755 {} \; ; find \"\$P\" -type f -exec chmod 644 {} \; ; done"
+
+      - name: Activate theme and plugins
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "set -e
+             command -v wp >/dev/null 2>&1 || { echo 'wp-cli not installed on server; skipping activation'; exit 0; }
+             export WP_CLI_PHP_ARGS='-d memory_limit=512M'
+             WP=\"wp --path=${{ secrets.DEPLOY_PATH }} --allow-root\"
+             # Activation is idempotent; already-active is reported and ignored.
+             \$WP theme activate 'haramara' || echo 'WARN: theme activation failed'
+             for P in woocommerce woocommerce-gateway-stripe haramara-core; do
+               \$WP plugin activate \"\$P\" || echo \"WARN: plugin \$P did not activate (missing dependency?)\"
+             done
+             # wp-cli runs as root here, so anything it wrote is root-owned and
+             # would be unmanageable from wp-admin. Hand it back to the site user.
+             chown -R haramara:haramara '${{ secrets.DEPLOY_PATH }}/wp-content/uploads' 2>/dev/null || true"
+
+      - name: Seed content (first deploy only)
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "set -e
+             MARKER='${{ secrets.DEPLOY_PATH }}/.wp-content-seeded'
+             if [ -f \"\$MARKER\" ]; then
+               echo \"Already seeded on \$(cat \"\$MARKER\"); skipping.\"
+               echo 'Re-run setup with --wp-reseed to seed again.'
+               exit 0
+             fi
+             command -v wp >/dev/null 2>&1 || { echo 'wp-cli not installed on server; cannot seed'; exit 1; }
+             # Seeding imports media and regenerates image sizes — the most
+             # memory-hungry step, and the likeliest to hit a capped PHP limit.
+             export WP_CLI_PHP_ARGS='-d memory_limit=512M'
+             cd '${{ secrets.DEPLOY_PATH }}'
+             # Deploys run over SSH as root, where wp-cli refuses to run unless
+             # told to. Wrap it so the configured command can be plain 'wp ...'.
+             wp() { command wp --path='${{ secrets.DEPLOY_PATH }}' --allow-root \"\$@\"; }
+             wp haramara install
+             # Seeding can import media; those files are root-owned because
+             # wp-cli ran as root. Give them to the site user or wp-admin
+             # cannot manage (or delete) its own media library.
+             chown -R haramara:haramara '${{ secrets.DEPLOY_PATH }}/wp-content/uploads' 2>/dev/null || true
+             date -u +'%Y-%m-%dT%H:%M:%SZ' > \"\$MARKER\"
+             chown haramara:haramara \"\$MARKER\" || true
+             echo 'Content seeded and marker written.'"
+
+      - name: Flush WordPress object cache
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "command -v wp >/dev/null 2>&1 && wp --path='${{ secrets.DEPLOY_PATH }}' --allow-root cache flush || echo 'wp-cli not available; skipping cache flush'"
+
+      - name: Clear cPanel NGINX cache
+        run: |
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "/usr/local/cpanel/scripts/ea-nginx clear_cache haramara && /usr/local/cpanel/scripts/ea-nginx reload"
