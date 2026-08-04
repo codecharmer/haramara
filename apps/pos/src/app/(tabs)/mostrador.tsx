@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 import {
 	ActivityIndicator,
-	Alert,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -15,6 +14,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { usePosApi } from '../../lib/auth';
+import { confirmDialog, notify } from '../../lib/dialog';
 import { color, money, radius, space, type } from '../../lib/theme';
 
 type Ticket = Record<number, number>; // product_id -> quantity
@@ -80,27 +80,25 @@ export default function MostradorScreen() {
 		onSuccess: (order) => {
 			setTicket({});
 			setNote('');
-			Alert.alert('Venta registrada', `Pedido #${order.number} · ${money(order.total)}`);
+			notify('Venta registrada', `Pedido #${order.number} · ${money(order.total)}`);
 			void queryClient.invalidateQueries({ queryKey: ['pos-products'] });
 			void queryClient.invalidateQueries({ queryKey: ['board'] });
 			void queryClient.invalidateQueries({ queryKey: ['summary'] });
 		},
 		onError: (e) => {
-			Alert.alert('No se pudo cobrar', e instanceof Error ? e.message : 'Intenta de nuevo.');
+			notify('No se pudo cobrar', e instanceof Error ? e.message : 'Intenta de nuevo.');
 			void queryClient.invalidateQueries({ queryKey: ['pos-products'] });
 		},
 	});
 
 	function charge() {
 		if (lines.length === 0 || sale.isPending) return;
-		Alert.alert(
-			`Cobrar ${money(total)}`,
-			payment === 'cash' ? 'Pago en efectivo.' : 'Pago con tarjeta en la terminal externa.',
-			[
-				{ text: 'Cancelar', style: 'cancel' },
-				{ text: 'Cobrar', onPress: () => sale.mutate() },
-			],
-		);
+		confirmDialog({
+			title: `Cobrar ${money(total)}`,
+			message: payment === 'cash' ? 'Pago en efectivo.' : 'Pago con tarjeta en la terminal externa.',
+			confirmText: 'Cobrar',
+			onConfirm: () => sale.mutate(),
+		});
 	}
 
 	const productPane = (

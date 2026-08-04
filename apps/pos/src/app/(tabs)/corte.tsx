@@ -2,7 +2,6 @@ import { useQuery } from '@tanstack/react-query';
 import React from 'react';
 import {
 	ActivityIndicator,
-	Alert,
 	Pressable,
 	RefreshControl,
 	ScrollView,
@@ -14,6 +13,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth, usePosApi } from '../../lib/auth';
 import { color, money, radius, space, type } from '../../lib/theme';
+
+import { confirmDialog } from '../../lib/dialog';
 
 const CHANNEL_LABELS: Record<string, string> = {
 	pickup_online: 'Pedidos en línea',
@@ -41,10 +42,13 @@ export default function CorteScreen() {
 	const data = summary.data;
 
 	function confirmSignOut() {
-		Alert.alert('Cerrar sesión', 'La tableta pedirá la contraseña de aplicación de nuevo.', [
-			{ text: 'Cancelar', style: 'cancel' },
-			{ text: 'Cerrar sesión', style: 'destructive', onPress: () => void signOut() },
-		]);
+		confirmDialog({
+			title: 'Cerrar sesión',
+			message: 'La tableta pedirá la contraseña de aplicación de nuevo.',
+			confirmText: 'Cerrar sesión',
+			destructive: true,
+			onConfirm: () => void signOut(),
+		});
 	}
 
 	return (

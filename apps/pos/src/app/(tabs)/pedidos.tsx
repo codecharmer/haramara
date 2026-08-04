@@ -3,7 +3,6 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tansta
 import React, { useState } from 'react';
 import {
 	ActivityIndicator,
-	Alert,
 	Pressable,
 	RefreshControl,
 	ScrollView,
@@ -17,6 +16,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OrderCard } from '../../components/order-card';
 import { isAuthError, useAuth, usePosApi } from '../../lib/auth';
 import { color, radius, space, type } from '../../lib/theme';
+
+import { notify } from '../../lib/dialog';
 
 const POLL_MS = 30_000;
 
@@ -53,7 +54,7 @@ export default function BoardScreen() {
 			void queryClient.invalidateQueries({ queryKey: ['board'] });
 		},
 		onError: (e) => {
-			Alert.alert('No se pudo actualizar', e instanceof Error ? e.message : 'Intenta de nuevo.');
+			notify('No se pudo actualizar', e instanceof Error ? e.message : 'Intenta de nuevo.');
 		},
 	});
 

@@ -6,9 +6,10 @@
 
 import { ApiError, type PosOrder, type QueueResponse } from '@haramara/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Alert } from 'react-native';
 
 import { usePosApi } from './auth';
+
+import { notify } from './dialog';
 
 /** New orders should surface fast — the queue is the bakery's doorbell. */
 const POLL_MS = 10_000;
@@ -50,11 +51,11 @@ export function useAcceptOrder(onAccepted?: (order: PosOrder) => void) {
 		},
 		onError: (e) => {
 			if (e instanceof ApiError && e.status === 409) {
-				Alert.alert('Pedido ya aceptado', 'Otro dispositivo ya aceptó este pedido.');
+				notify('Pedido ya aceptado', 'Otro dispositivo ya aceptó este pedido.');
 				void queryClient.invalidateQueries({ queryKey: QUEUE_KEY });
 				return;
 			}
-			Alert.alert('No se pudo aceptar', e instanceof Error ? e.message : 'Intenta de nuevo.');
+			notify('No se pudo aceptar', e instanceof Error ? e.message : 'Intenta de nuevo.');
 		},
 	});
 }

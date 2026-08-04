@@ -1,8 +1,10 @@
 import type { PosOrder, StaffTransition } from '@haramara/api-client';
 import React from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { color, money, radius, space, statusStyle, TRANSITION_LABELS, type } from '../lib/theme';
+
+import { confirmDialog } from '../lib/dialog';
 
 interface Props {
 	order: PosOrder;
@@ -16,14 +18,12 @@ export function OrderCard({ order, onTransition, busyStatus }: Props) {
 
 	function press(target: StaffTransition) {
 		if (target === 'completed') {
-			Alert.alert(
-				`Entregar pedido #${order.number}`,
-				`${order.customer} · ${money(order.total)}`,
-				[
-					{ text: 'Cancelar', style: 'cancel' },
-					{ text: 'Entregado', style: 'default', onPress: () => onTransition(order, target) },
-				],
-			);
+			confirmDialog({
+				title: `Entregar pedido #${order.number}`,
+				message: `${order.customer} · ${money(order.total)}`,
+				confirmText: 'Entregado',
+				onConfirm: () => onTransition(order, target),
+			});
 			return;
 		}
 		onTransition(order, target);
