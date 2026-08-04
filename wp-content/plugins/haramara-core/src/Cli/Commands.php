@@ -42,6 +42,7 @@ final class Commands implements Bootable {
 			\WP_CLI::add_command( 'haramara seed-products', array( $this, 'seed_products' ) );
 			\WP_CLI::add_command( 'haramara install-pages', array( $this, 'install_pages' ) );
 			\WP_CLI::add_command( 'haramara import-media', array( $this, 'import_media' ) );
+			\WP_CLI::add_command( 'haramara ensure-gateways', array( $this, 'ensure_gateways' ) );
 			\WP_CLI::add_command( 'haramara reset', array( $this, 'reset' ) );
 		}
 	}
@@ -228,6 +229,23 @@ final class Commands implements Bootable {
 			\WP_CLI::line( sprintf( 'Página de inicio: #%d', (int) $report['front_page'] ) );
 		}
 		\WP_CLI::success( 'Páginas instaladas.' );
+	}
+
+	/**
+	 * Habilita la pasarela "Paga al recoger" (COD) si nunca se ha configurado.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp haramara ensure-gateways
+	 *
+	 * @when after_wp_load
+	 */
+	public function ensure_gateways(): void {
+		if ( Installer::ensure_gateways() ) {
+			\WP_CLI::success( 'Pasarela "Paga al recoger" habilitada.' );
+			return;
+		}
+		\WP_CLI::line( 'Pasarelas ya configuradas; sin cambios.' );
 	}
 
 	/**

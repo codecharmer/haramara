@@ -62,6 +62,16 @@ export default function CheckoutScreen() {
 		isValidPhone(phone) &&
 		isValidEmail(email);
 
+	function missingFieldsHint(): string {
+		const missing: string[] = [];
+		if (pickupDate === '') missing.push('fecha');
+		if (pickupSlot === '') missing.push('horario');
+		if (firstName.trim() === '') missing.push('nombre');
+		if (!isValidPhone(phone)) missing.push('celular');
+		if (!isValidEmail(email)) missing.push('correo');
+		return `Falta: ${missing.join(', ')}.`;
+	}
+
 	const order = useMutation({
 		mutationFn: () =>
 			submitOrder(cart.lines, {
@@ -195,10 +205,13 @@ export default function CheckoutScreen() {
 					</View>
 				</View>
 
-				{error !== null && <Text style={styles.error}>{error}</Text>}
 			</ScrollView>
 
 			<View style={[styles.footer, { paddingBottom: insets.bottom + space(3) }]}>
+				{error !== null && <Text style={styles.error}>{error}</Text>}
+				{error === null && !formValid && cart.lines.length > 0 && (
+					<Text style={styles.incomplete}>{missingFieldsHint()}</Text>
+				)}
 				<View style={styles.totalRow}>
 					<Text style={styles.totalLabel}>Total ({cart.count} pzas)</Text>
 					<Text style={styles.totalValue}>{money(cart.total)}</Text>
@@ -347,6 +360,7 @@ const styles = StyleSheet.create({
 		fontSize: type.small,
 		lineHeight: 20,
 	},
+	incomplete: { color: color.textSoft, fontSize: type.small, textAlign: 'center' },
 	footer: {
 		backgroundColor: color.surface,
 		borderTopWidth: 1,

@@ -203,6 +203,18 @@ jobs:
              \$WP language core update || true
              chown -R haramara:haramara '${{ secrets.DEPLOY_PATH }}/wp-content/languages' 2>/dev/null || true"
 
+      - name: Ensure payment gateway defaults
+        run: |
+          # Enables "Paga al recoger" (COD) only when the option has never
+          # been configured; a deliberate disable in wp-admin is respected.
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "command -v wp >/dev/null 2>&1 || { echo 'wp-cli not installed on server; skipping gateways'; exit 0; }
+             export WP_CLI_PHP_ARGS='-d memory_limit=512M'
+             wp --path=${{ secrets.DEPLOY_PATH }} --allow-root haramara ensure-gateways || echo 'WARN: gateway defaults failed'"
+
       - name: Seed content (first deploy only)
         run: |
           ssh -i ~/.ssh/deploy_key \

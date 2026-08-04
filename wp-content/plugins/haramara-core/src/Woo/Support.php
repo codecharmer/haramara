@@ -200,7 +200,10 @@ final class Support implements Bootable {
 	 * @return array<string,array<string,mixed>>
 	 */
 	public function relax_address_requirements( array $fields ): array {
-		foreach ( array( 'address_1', 'address_2', 'city', 'postcode', 'state' ) as $key ) {
+		// last_name: the café addresses guests by first name (the app's form
+		// already promises "Apellido (opcional)"); requiring it rejected every
+		// checkout without one.
+		foreach ( array( 'last_name', 'address_1', 'address_2', 'city', 'postcode', 'state' ) as $key ) {
 			if ( isset( $fields[ $key ] ) ) {
 				$fields[ $key ]['required'] = false;
 			}

@@ -120,6 +120,7 @@ final class Installer {
 		$report['navigation'] = self::install_navigation();
 		$report['menus']      = self::install_menus();
 		$report['wc_pages']   = self::set_woocommerce_pages();
+		$report['gateways']   = self::ensure_gateways();
 
 		update_option( 'haramara_content_installed', 1 );
 		delete_option( 'haramara_needs_content_install' );
@@ -711,6 +712,39 @@ final class Installer {
 	/* ---------------------------------------------------------------------- */
 	/* WooCommerce core pages */
 	/* ---------------------------------------------------------------------- */
+
+	/**
+	 * Enable the pay-at-pickup gateway on fresh installs.
+	 *
+	 * The launch flow is order online, pay at the bar (Stripe keys come
+	 * later), but WooCommerce ships COD disabled — leaving the Store API with
+	 * zero payment methods and every checkout rejected. Seeds only when the
+	 * option is absent, so a deliberate later disable in wp-admin is never
+	 * overridden by deploys.
+	 */
+	public static function ensure_gateways(): bool {
+		if ( ! self::has_woocommerce() ) {
+			return false;
+		}
+		if ( false !== get_option( 'woocommerce_cod_settings' ) ) {
+			return false;
+		}
+
+		update_option(
+			'woocommerce_cod_settings',
+			array(
+				'enabled'            => 'yes',
+				'title'              => 'Paga al recoger',
+				'description'        => 'Efectivo o tarjeta al recoger en barra.',
+				'instructions'       => 'Tu pedido se paga al recogerlo en Tulipán 302.',
+				'enable_for_methods' => array(),
+				'enable_for_virtual' => 'yes',
+			),
+			false
+		);
+
+		return true;
+	}
 
 	public static function set_woocommerce_pages(): bool {
 		if ( ! self::has_woocommerce() ) {

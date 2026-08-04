@@ -17,7 +17,7 @@ parameters:
 
 		-
 			message: "#^Call to static method add_command\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 5
+			count: 6
 			path: wp-content/plugins/haramara-core/src/Cli/Commands.php
 
 		-
@@ -27,12 +27,12 @@ parameters:
 
 		-
 			message: "#^Call to static method line\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 13
+			count: 14
 			path: wp-content/plugins/haramara-core/src/Cli/Commands.php
 
 		-
 			message: "#^Call to static method success\\(\\) on an unknown class WP_CLI\\.$#"
-			count: 5
+			count: 6
 			path: wp-content/plugins/haramara-core/src/Cli/Commands.php
 
 		-

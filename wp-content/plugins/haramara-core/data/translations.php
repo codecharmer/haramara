@@ -157,6 +157,9 @@ return array(
 	'Finalizar pedido'                                     => 'Complete order',
 	'Volver a la carta'                                    => 'Back to the menu',
 	'Te enviaremos un mensaje cuando tu pedido esté listo para recoger. Gracias por apoyar el oficio.' => 'We’ll message you when your order is ready for pickup. Thank you for supporting the craft.',
+	'Paga al recoger'                                      => 'Pay at pickup',
+	'Efectivo o tarjeta al recoger en barra.'              => 'Cash or card when you pick up at the bar.',
+	'Tu pedido se paga al recogerlo en Tulipán 302.'       => 'Your order is paid for at pickup, at Tulipán 302.',
 
 	/* ----------------------------------------------------- Historia page */
 	'Creamos a través de procesos manuales.'               => 'We create through manual processes.',
