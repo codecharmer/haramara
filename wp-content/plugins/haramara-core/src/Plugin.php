@@ -48,6 +48,7 @@ final class Plugin {
 			// Configuration & settings.
 			Setup\Options::class,
 			Setup\Settings::class,
+			Setup\Rewrites::class,
 			Support\Assets::class,
 
 			// Bilingual front end (es default · en under /en/). Must run
