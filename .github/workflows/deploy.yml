@@ -185,6 +185,24 @@ jobs:
              # would be unmanageable from wp-admin. Hand it back to the site user.
              chown -R haramara:haramara '${{ secrets.DEPLOY_PATH }}/wp-content/uploads' 2>/dev/null || true"
 
+      - name: Ensure Spanish language packs
+        run: |
+          # Composer/rsync-managed plugins never pass through `wp plugin install`,
+          # so their translations are not fetched automatically. Idempotent:
+          # already-installed packs are reported and skipped.
+          ssh -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -p "${{ secrets.SSH_PORT }}" \
+            "${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}" \
+            "command -v wp >/dev/null 2>&1 || { echo 'wp-cli not installed on server; skipping language packs'; exit 0; }
+             export WP_CLI_PHP_ARGS='-d memory_limit=512M'
+             WP=\"wp --path=${{ secrets.DEPLOY_PATH }} --allow-root\"
+             \$WP language core install es_MX || echo 'WARN: core es_MX pack failed'
+             \$WP language plugin install woocommerce es_MX || echo 'WARN: woocommerce es_MX pack failed'
+             \$WP language plugin install woocommerce-gateway-stripe es_MX || echo 'WARN: stripe es_MX pack failed'
+             \$WP language core update || true
+             chown -R haramara:haramara '${{ secrets.DEPLOY_PATH }}/wp-content/languages' 2>/dev/null || true"
+
       - name: Seed content (first deploy only)
         run: |
           ssh -i ~/.ssh/deploy_key \
