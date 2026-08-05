@@ -15,7 +15,7 @@ import {
 import { useAuth } from '../lib/auth';
 import { color, radius, space, type } from '../lib/theme';
 
-const DEFAULT_URL = 'https://haramara.mx';
+const DEFAULT_URL = 'https://haramara.cafe';
 
 export default function Login() {
 	const { signIn } = useAuth();

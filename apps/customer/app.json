@@ -8,8 +8,10 @@
     "scheme": "haramara",
     "userInterfaceStyle": "dark",
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "mx.haramara.app"
+      "bundleIdentifier": "mx.haramara.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -41,6 +43,16 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
-    "backgroundColor": "#131110"
+    "owner": "codecharmers-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "backgroundColor": "#131110",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "38213286-0a0d-4392-8c3a-1df7ce407a14"
+      }
+    }
   }
 }
