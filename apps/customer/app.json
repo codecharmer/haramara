@@ -43,6 +43,10 @@
       "typedRoutes": true,
       "reactCompiler": true
     },
+    "owner": "codecharmers-team",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "backgroundColor": "#131110",
     "extra": {
       "router": {},
