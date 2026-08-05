@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { appApi } from '../lib/api';
 import { useCart } from '../lib/cart';
 import { isValidEmail, isValidPhone, submitOrder } from '../lib/checkout';
+import { useStoredContact } from '../lib/contact';
 import { color, font, money, radius, space, type } from '../lib/theme';
 
 export default function CheckoutScreen() {
@@ -27,10 +28,9 @@ export default function CheckoutScreen() {
 
 	const [pickupDate, setPickupDate] = useState('');
 	const [pickupSlot, setPickupSlot] = useState('');
-	const [firstName, setFirstName] = useState('');
-	const [lastName, setLastName] = useState('');
-	const [phone, setPhone] = useState('');
-	const [email, setEmail] = useState('');
+	// Nombre, celular y correo se recuerdan en el dispositivo entre pedidos.
+	const { contact, setContact } = useStoredContact();
+	const { firstName, lastName, phone, email } = contact;
 	const [error, setError] = useState<string | null>(null);
 
 	const dates = useQuery({ queryKey: ['pickup-dates'], queryFn: () => appApi.pickupDates() });
@@ -171,12 +171,21 @@ export default function CheckoutScreen() {
 
 				<View style={styles.card}>
 					<Text style={styles.sectionTitle}>Tus datos</Text>
-					<Field label="Nombre" value={firstName} onChangeText={setFirstName} autoComplete="name" />
-					<Field label="Apellido (opcional)" value={lastName} onChangeText={setLastName} />
+					<Field
+						label="Nombre"
+						value={firstName}
+						onChangeText={(v) => setContact({ firstName: v })}
+						autoComplete="name"
+					/>
+					<Field
+						label="Apellido (opcional)"
+						value={lastName}
+						onChangeText={(v) => setContact({ lastName: v })}
+					/>
 					<Field
 						label="Celular (WhatsApp)"
 						value={phone}
-						onChangeText={setPhone}
+						onChangeText={(v) => setContact({ phone: v })}
 						keyboardType="phone-pad"
 						placeholder="777 123 4567"
 						invalid={phone !== '' && !isValidPhone(phone)}
@@ -185,7 +194,7 @@ export default function CheckoutScreen() {
 					<Field
 						label="Correo"
 						value={email}
-						onChangeText={setEmail}
+						onChangeText={(v) => setContact({ email: v })}
 						keyboardType="email-address"
 						autoCapitalize="none"
 						invalid={email !== '' && !isValidEmail(email)}
