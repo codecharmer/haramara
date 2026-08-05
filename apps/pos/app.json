@@ -8,6 +8,7 @@
     "scheme": "haramara-pos",
     "userInterfaceStyle": "dark",
     "ios": {
+      "supportsTablet": true,
       "bundleIdentifier": "mx.haramara.pos",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
