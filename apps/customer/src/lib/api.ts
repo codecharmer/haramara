@@ -9,8 +9,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppApi, StoreApi } from '@haramara/api-client';
 
-// STARTER: point the fallback at the production site once it exists.
-export const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'https://example.com').replace(/\/+$/, '');
+export const BASE_URL = (process.env.EXPO_PUBLIC_API_URL ?? 'https://haramara.cafe').replace(/\/+$/, '');
 
 /** Optional pre-launch AccessGate key (see Rest\AccessGate + HARAMARA_APP_KEY). */
 const APP_KEY = process.env.EXPO_PUBLIC_APP_KEY;
