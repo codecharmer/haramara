@@ -1,16 +1,11 @@
 {
   "cli": {
-<<<<<<< HEAD
     "version": ">= 16.0.0",
-=======
-    "version": ">= 21.5.0",
->>>>>>> 30a5158 (POS cahnges)
     "appVersionSource": "remote"
   },
   "build": {
     "development": {
       "developmentClient": true,
-<<<<<<< HEAD
       "distribution": "internal",
       "channel": "development"
     },
@@ -21,15 +16,6 @@
     "production": {
       "autoIncrement": true,
       "channel": "production"
-=======
-      "distribution": "internal"
-    },
-    "preview": {
-      "distribution": "internal"
-    },
-    "production": {
-      "autoIncrement": true
->>>>>>> 30a5158 (POS cahnges)
     }
   },
   "submit": {
