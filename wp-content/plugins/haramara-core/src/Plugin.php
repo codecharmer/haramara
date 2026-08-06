@@ -67,8 +67,9 @@ final class Plugin {
 			Sms\Logger::class,
 			Sms\OrderNotifications::class,
 
-			// Staff push notifications (new orders → POS devices).
+			// Push notifications (new orders → POS devices, status updates → customer devices).
 			Push\NewOrderNotifier::class,
+			Push\OrderStatusNotifier::class,
 
 			// Lealtad Haramara (QR members, stamps).
 			Loyalty\Members::class,

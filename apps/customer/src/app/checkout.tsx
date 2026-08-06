@@ -19,6 +19,7 @@ import { appApi } from '../lib/api';
 import { useCart } from '../lib/cart';
 import { isValidEmail, isValidPhone, submitOrder } from '../lib/checkout';
 import { useStoredContact } from '../lib/contact';
+import { registerForOrderUpdates } from '../lib/notifications';
 import { color, font, money, radius, space, type } from '../lib/theme';
 
 export default function CheckoutScreen() {
@@ -93,6 +94,9 @@ export default function CheckoutScreen() {
 				pickupLabel: `${dateLabel} · ${pickupSlot}`,
 			});
 			cart.clear();
+			// Fire-and-forget: the permission prompt lands right after ordering,
+			// and a denial must not block the confirmation screen.
+			void registerForOrderUpdates(result.order_id, result.order_key);
 			void queryClient.invalidateQueries({ queryKey: ['availability'] });
 			router.replace({
 				pathname: '/pedido/[id]',
