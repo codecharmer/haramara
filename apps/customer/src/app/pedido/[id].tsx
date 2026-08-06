@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
 	ActivityIndicator,
 	Linking,
@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { appApi } from '../../lib/api';
+import { registerForOrderUpdates } from '../../lib/notifications';
 import { color, font, money, radius, space, statusStyle, type } from '../../lib/theme';
 
 const TIMELINE = ['processing', 'preparing', 'ready', 'completed'] as const;
@@ -37,6 +38,19 @@ export default function OrderScreen() {
 	});
 
 	const config = useQuery({ queryKey: ['config'], queryFn: () => appApi.config() });
+
+	// Re-attach this device's push token once per visit while the order is
+	// open: covers permission granted after checkout, token rotation, and the
+	// race where a status changed before checkout's registration landed.
+	const pushRegistered = useRef(false);
+	useEffect(() => {
+		const status = order.data?.status;
+		if (pushRegistered.current || !status || !OPEN_STATUSES.has(status) || !key) {
+			return;
+		}
+		pushRegistered.current = true;
+		void registerForOrderUpdates(Number(id), key);
+	}, [order.data?.status, id, key]);
 
 	const data = order.data;
 	const st = data ? statusStyle(data.status, data.status_label) : null;
@@ -76,7 +90,7 @@ export default function OrderScreen() {
 						<View style={styles.confirmation}>
 							<Text style={styles.confirmationTitle}>Tu pedido está apartado.</Text>
 							<Text style={styles.confirmationText}>
-								Te avisaremos por WhatsApp cuando esté listo.
+								Te avisaremos aquí y por WhatsApp cuando esté listo.
 							</Text>
 						</View>
 					)}

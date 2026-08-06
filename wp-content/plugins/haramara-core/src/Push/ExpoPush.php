@@ -5,7 +5,8 @@
  * Thin wrapper over Expo's push HTTP API (https://exp.host/--/api/v2/push/send).
  * Fire-and-forget by design: transport failures are logged under WP_DEBUG and
  * never bubble up — a push must never fatal the payment hook it rides on.
- * Tokens Expo reports as DeviceNotRegistered are pruned from the registry.
+ * Tokens Expo reports as DeviceNotRegistered are handed to a caller-supplied
+ * pruner (the staff registry by default).
  *
  * @package Haramara\Core
  */
@@ -31,16 +32,21 @@ final class ExpoPush {
 	/**
 	 * Send one notification to a set of device tokens.
 	 *
-	 * @param string[]            $tokens Expo push tokens.
-	 * @param string              $title  Notification title.
-	 * @param string              $body   Notification body.
-	 * @param array<string,mixed> $data   Payload delivered to the app.
+	 * @param string[]                      $tokens           Expo push tokens.
+	 * @param string                        $title            Notification title.
+	 * @param string                        $body             Notification body.
+	 * @param array<string,mixed>           $data             Payload delivered to the app.
+	 * @param (callable(string): void)|null $on_invalid_token Called with each token Expo reports
+	 *                                                        DeviceNotRegistered; defaults to
+	 *                                                        pruning the staff registry.
 	 */
-	public static function send( array $tokens, string $title, string $body, array $data = array() ): void {
+	public static function send( array $tokens, string $title, string $body, array $data = array(), ?callable $on_invalid_token = null ): void {
 		$tokens = array_values( array_filter( array_map( 'strval', $tokens ) ) );
 		if ( empty( $tokens ) ) {
 			return;
 		}
+
+		$on_invalid_token ??= static fn( string $token ) => StaffTokens::remove( $token );
 
 		foreach ( array_chunk( $tokens, self::CHUNK ) as $chunk ) {
 			$messages = array();
@@ -73,17 +79,18 @@ final class ExpoPush {
 				continue;
 			}
 
-			self::handle_tickets( $chunk, $response );
+			self::handle_tickets( $chunk, $response, $on_invalid_token );
 		}
 	}
 
 	/**
 	 * Inspect the per-message tickets; prune tokens Expo no longer recognises.
 	 *
-	 * @param string[]            $chunk    Tokens in the order they were sent.
-	 * @param array<string,mixed> $response wp_remote_post response.
+	 * @param string[]               $chunk            Tokens in the order they were sent.
+	 * @param array<string,mixed>    $response         wp_remote_post response.
+	 * @param callable(string): void $on_invalid_token Pruner for DeviceNotRegistered tokens.
 	 */
-	private static function handle_tickets( array $chunk, array $response ): void {
+	private static function handle_tickets( array $chunk, array $response, callable $on_invalid_token ): void {
 		$payload = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 		$tickets = is_array( $payload ) && is_array( $payload['data'] ?? null ) ? $payload['data'] : array();
 
@@ -94,7 +101,7 @@ final class ExpoPush {
 
 			$error = (string) ( $ticket['details']['error'] ?? '' );
 			if ( 'DeviceNotRegistered' === $error && isset( $chunk[ $i ] ) ) {
-				StaffTokens::remove( (string) $chunk[ $i ] );
+				$on_invalid_token( (string) $chunk[ $i ] );
 			}
 
 			self::log( sprintf( 'Expo push ticket error (%s): %s', $error, (string) ( $ticket['message'] ?? '' ) ) );

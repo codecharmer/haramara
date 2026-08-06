@@ -3,10 +3,14 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 
 import { useCart } from '../../lib/cart';
+import { useOrderNotifications } from '../../lib/notifications';
 import { color } from '../../lib/theme';
 
 export default function TabsLayout() {
-	const { count } = useCart();
+	const { count, orders } = useCart();
+
+	// Order-update pushes: taps land on the order, foreground arrivals refresh it.
+	useOrderNotifications(orders);
 
 	return (
 		<Tabs

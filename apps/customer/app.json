@@ -37,7 +37,8 @@
           "imageWidth": 96
         }
       ],
-      "expo-font"
+      "expo-font",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -53,6 +54,9 @@
       "eas": {
         "projectId": "38213286-0a0d-4392-8c3a-1df7ce407a14"
       }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/38213286-0a0d-4392-8c3a-1df7ce407a14"
     }
   }
 }
