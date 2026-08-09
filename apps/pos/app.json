@@ -69,6 +69,9 @@
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "backgroundColor": "#131110"
+    "backgroundColor": "#131110",
+    "updates": {
+      "url": "https://u.expo.dev/32fdbea2-e744-4f4d-8588-209254b2b65b"
+    }
   }
 }
