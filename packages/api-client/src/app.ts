@@ -52,4 +52,12 @@ export class AppApi {
 	loyaltyCard(token: string): Promise<LoyaltyCard> {
 		return request<LoyaltyCard>(this.cfg, `${NS}/app/loyalty/card?token=${encodeURIComponent(token)}`);
 	}
+
+	/**
+	 * Absolute URL of the signed Apple Wallet pass for a card token. Opened in
+	 * a browser (Safari shows the native "Add Pass" sheet), never fetched.
+	 */
+	walletPassUrl(token: string): string {
+		return `${this.cfg.baseUrl}${NS}/app/loyalty/wallet-pass?token=${encodeURIComponent(token)}`;
+	}
 }

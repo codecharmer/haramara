@@ -2,11 +2,11 @@
 /**
  * Ajustes — Haramara settings screen.
  *
- * Tabbed settings UI (Negocio / Recolección / SMS / SEO) built on the WordPress
- * Settings API. The whole form posts to options.php with settings_fields('haramara')
- * so the sanitizers registered in Options handle every write; all four option
- * groups are rendered in one form (tabs are presentational) so switching tabs and
- * saving never wipes another tab's values.
+ * Tabbed settings UI (Negocio / Recolección / SMS / SEO / Empleados) built on the
+ * WordPress Settings API. The whole form posts to options.php with
+ * settings_fields('haramara') so the sanitizers registered in Options handle every
+ * write; all five option groups are rendered in one form (tabs are presentational)
+ * so switching tabs and saving never wipes another tab's values.
  *
  * Secrets are rendered masked; when a value is supplied through a HARAMARA_TWILIO_*
  * constant the field becomes read-only/informational. Two side tools live outside
@@ -67,16 +67,18 @@ final class Settings implements Bootable {
 			wp_die( esc_html__( 'No tienes permiso para ver esta página.', 'haramara-core' ) );
 		}
 
-		$business = Options::group( Options::BUSINESS );
-		$pickup   = Options::group( Options::PICKUP );
-		$sms      = Options::group( Options::SMS );
-		$seo      = Options::group( Options::SEO );
+		$business  = Options::group( Options::BUSINESS );
+		$pickup    = Options::group( Options::PICKUP );
+		$sms       = Options::group( Options::SMS );
+		$seo       = Options::group( Options::SEO );
+		$employees = Options::group( Options::EMPLOYEES );
 
 		$tabs   = array(
-			'business' => __( 'Negocio', 'haramara-core' ),
-			'pickup'   => __( 'Recolección', 'haramara-core' ),
-			'sms'      => __( 'SMS', 'haramara-core' ),
-			'seo'      => __( 'SEO', 'haramara-core' ),
+			'business'  => __( 'Negocio', 'haramara-core' ),
+			'pickup'    => __( 'Recolección', 'haramara-core' ),
+			'sms'       => __( 'SMS', 'haramara-core' ),
+			'seo'       => __( 'SEO', 'haramara-core' ),
+			'employees' => __( 'Empleados', 'haramara-core' ),
 		);
 		$active = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'business'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentational tab.
 		if ( ! isset( $tabs[ $active ] ) ) {
@@ -112,6 +114,9 @@ final class Settings implements Bootable {
 				</div>
 				<div class="haramara-tab-panel" data-haramara-panel="seo" <?php echo 'seo' === $active ? '' : 'hidden'; ?>>
 					<?php $this->render_seo( $seo ); ?>
+				</div>
+				<div class="haramara-tab-panel" data-haramara-panel="employees" <?php echo 'employees' === $active ? '' : 'hidden'; ?>>
+					<?php $this->render_employees( $employees ); ?>
 				</div>
 
 				<?php submit_button( __( 'Guardar cambios', 'haramara-core' ) ); ?>
@@ -260,6 +265,37 @@ final class Settings implements Bootable {
 		}
 		echo '</select></td></tr>';
 
+		echo '</tbody></table>';
+	}
+
+	/* ---------------------------------------------------------------------- */
+	/* Tab: Empleados */
+	/* ---------------------------------------------------------------------- */
+
+	/**
+	 * Editable employee-name list backing the POS "¿Quién lo lleva?" picker.
+	 *
+	 * @param array<string,mixed> $v Stored employees option group.
+	 */
+	private function render_employees( array $v ): void {
+		$g     = Options::EMPLOYEES;
+		$names = array_values( array_filter( array_map( 'strval', (array) ( $v['names'] ?? array() ) ) ) );
+		echo '<table class="form-table" role="presentation"><tbody>';
+		echo '<tr><th scope="row">' . esc_html__( 'Nombres de empleados', 'haramara-core' ) . '</th><td>';
+		echo '<div class="haramara-repeatable" data-repeatable="employees">';
+		if ( empty( $names ) ) {
+			$names = array( '' );
+		}
+		foreach ( $names as $name ) {
+			$this->repeatable_row( $g . '[names][]', $name, 'text' );
+		}
+		echo '</div>';
+		printf(
+			'<button type="button" class="button haramara-repeatable-add" data-target="employees">%s</button>',
+			esc_html__( 'Agregar empleado', 'haramara-core' )
+		);
+		echo '<p class="description">' . esc_html__( 'Aparecen en el POS al registrar una salida interna («¿Quién lo lleva?»). Desde el POS también se pueden agregar nombres.', 'haramara-core' ) . '</p>';
+		echo '</td></tr>';
 		echo '</tbody></table>';
 	}
 

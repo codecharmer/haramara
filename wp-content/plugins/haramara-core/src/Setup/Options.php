@@ -24,10 +24,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 final class Options implements Bootable {
 
-	public const BUSINESS = 'haramara_business_info';
-	public const PICKUP   = 'haramara_pickup';
-	public const SMS      = 'haramara_sms';
-	public const SEO      = 'haramara_seo';
+	public const BUSINESS  = 'haramara_business_info';
+	public const PICKUP    = 'haramara_pickup';
+	public const SMS       = 'haramara_sms';
+	public const SEO       = 'haramara_seo';
+	public const EMPLOYEES = 'haramara_employees';
+
+	/** Hard ceiling for the employee-name list (POS picker stays scannable). */
+	private const MAX_EMPLOYEES = 50;
 
 	public function boot(): void {
 		add_action( 'init', array( $this, 'register_settings' ) );
@@ -38,10 +42,11 @@ final class Options implements Bootable {
 	 */
 	public function register_settings(): void {
 		$groups = array(
-			self::BUSINESS => array( $this, 'sanitize_business' ),
-			self::PICKUP   => array( $this, 'sanitize_pickup' ),
-			self::SMS      => array( $this, 'sanitize_sms' ),
-			self::SEO      => array( $this, 'sanitize_seo' ),
+			self::BUSINESS  => array( $this, 'sanitize_business' ),
+			self::PICKUP    => array( $this, 'sanitize_pickup' ),
+			self::SMS       => array( $this, 'sanitize_sms' ),
+			self::SEO       => array( $this, 'sanitize_seo' ),
+			self::EMPLOYEES => array( $this, 'sanitize_employees' ),
 		);
 		foreach ( $groups as $name => $sanitizer ) {
 			register_setting(
@@ -66,7 +71,7 @@ final class Options implements Bootable {
 		return array(
 			// Real business facts (verified Aug 2026 — Google listing + Instagram bio).
 			// Keys are the schema — patterns and SEO read them via Options::business().
-			self::BUSINESS => array(
+			self::BUSINESS  => array(
 				'name'             => 'Haramara',
 				'tagline'          => 'Café de especialidad y pan de masa madre, hechos con procesos manuales.',
 				'phone'            => '777 136 2228',
@@ -88,7 +93,7 @@ final class Options implements Bootable {
 				'latitude'         => '18.9460606',
 				'longitude'        => '-99.2053051',
 			),
-			self::PICKUP   => array(
+			self::PICKUP    => array(
 				'open_days'       => array( 0, 1, 3, 4, 5, 6 ), // Wed–Mon; closed Tuesdays (0=Sun … 6=Sat).
 				'open_time'       => '08:00',
 				'close_time'      => '20:00',
@@ -101,7 +106,7 @@ final class Options implements Bootable {
 				'timezone'        => 'America/Mexico_City',
 				'instructions'    => 'Recoge tu pedido en barra y menciona tu número de pedido.',
 			),
-			self::SMS      => array(
+			self::SMS       => array(
 				'enabled'               => false,
 				'provider'              => 'twilio',
 				'channel'               => 'sms',
@@ -113,11 +118,14 @@ final class Options implements Bootable {
 				'messaging_service_sid' => '',
 				'notify_customer'       => true,
 			),
-			self::SEO      => array(
+			self::SEO       => array(
 				'default_og_image'  => 0,
 				'twitter_handle'    => '',
 				'organization_logo' => 0,
 				'price_range'       => '$$',
+			),
+			self::EMPLOYEES => array(
+				'names' => array(),
 			),
 		);
 	}
@@ -147,6 +155,48 @@ final class Options implements Bootable {
 	/** @return array<string,mixed> */
 	public static function seo(): array {
 		return self::group( self::SEO );
+	}
+
+	/**
+	 * Employee names shown in the POS "¿Quién lo lleva?" picker.
+	 *
+	 * @return string[]
+	 */
+	public static function employees(): array {
+		$names = self::get( self::EMPLOYEES, 'names', array() );
+		return array_values( array_map( 'strval', is_array( $names ) ? $names : array() ) );
+	}
+
+	/**
+	 * Append a name to the employee list.
+	 *
+	 * Duplicates (case-insensitive) are a success no-op. When the list is at
+	 * MAX_EMPLOYEES the name is not added — callers detect that by its absence
+	 * from the returned list.
+	 *
+	 * @param string $name Raw name as received.
+	 * @return string[] The list after the attempt.
+	 */
+	public static function add_employee( string $name ): array {
+		$name  = mb_substr( sanitize_text_field( $name ), 0, 80 );
+		$names = self::employees();
+
+		if ( '' === $name ) {
+			return $names;
+		}
+		foreach ( $names as $existing ) {
+			if ( 0 === strcasecmp( $existing, $name ) ) {
+				return $names;
+			}
+		}
+		if ( count( $names ) >= self::MAX_EMPLOYEES ) {
+			return $names;
+		}
+
+		$names[] = $name;
+		update_option( self::EMPLOYEES, array( 'names' => $names ) );
+
+		return $names;
 	}
 
 	/**
@@ -267,6 +317,30 @@ final class Options implements Bootable {
 		$out['messaging_service_sid'] = sanitize_text_field( (string) ( $value['messaging_service_sid'] ?? '' ) );
 		$out['notify_customer']       = ! empty( $value['notify_customer'] );
 		return $out;
+	}
+
+	/**
+	 * Sanitize the employee-name list saved from the admin Empleados tab.
+	 *
+	 * @param mixed $value Raw option value.
+	 * @return array<string,mixed>
+	 */
+	public function sanitize_employees( mixed $value ): array {
+		$value = is_array( $value ) ? $value : array();
+		$names = array();
+		foreach ( (array) ( $value['names'] ?? array() ) as $name ) {
+			$name = mb_substr( sanitize_text_field( (string) $name ), 0, 80 );
+			if ( '' === $name ) {
+				continue;
+			}
+			foreach ( $names as $existing ) {
+				if ( 0 === strcasecmp( $existing, $name ) ) {
+					continue 2;
+				}
+			}
+			$names[] = $name;
+		}
+		return array( 'names' => array_slice( $names, 0, self::MAX_EMPLOYEES ) );
 	}
 
 	/**

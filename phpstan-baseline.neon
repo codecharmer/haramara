@@ -131,6 +131,11 @@ parameters:
 			path: wp-content/plugins/haramara-core/src/Sms/Logger.php
 
 		-
+			message: "#^Constant ARRAY_A not found\\.$#"
+			count: 2
+			path: wp-content/plugins/haramara-core/src/Woo/Withdrawals.php
+
+		-
 			message: "#^Constant DAY_IN_SECONDS not found\\.$#"
 			count: 1
 			path: wp-content/plugins/haramara-core/src/Sms/Logger.php

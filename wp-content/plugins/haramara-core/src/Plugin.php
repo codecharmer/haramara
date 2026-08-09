@@ -73,6 +73,7 @@ final class Plugin {
 
 			// Lealtad Haramara (QR members, stamps).
 			Loyalty\Members::class,
+			Loyalty\WalletPass::class,
 
 			// SEO.
 			Seo\MetaTags::class,
@@ -101,6 +102,8 @@ final class Plugin {
 			return;
 		}
 		$this->booted = true;
+
+		Setup\Activator::maybe_upgrade();
 
 		load_plugin_textdomain( 'haramara-core', false, dirname( plugin_basename( HARAMARA_CORE_FILE ) ) . '/languages' );
 

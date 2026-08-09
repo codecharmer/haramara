@@ -1,5 +1,18 @@
 import { ApiError, HttpConfig, request, toBase64 } from './http';
-import type { Board, DailySummary, LoyaltyCard, PosOrder, PosProduct, QueueResponse, StaffTransition, WalkInInput } from './types';
+import type {
+	Board,
+	DailySummary,
+	EmployeesResponse,
+	LoyaltyCard,
+	PosOrder,
+	PosProduct,
+	QueueResponse,
+	StaffTransition,
+	WalkInInput,
+	Withdrawal,
+	WithdrawalInput,
+	WithdrawalsResponse,
+} from './types';
 
 export interface PosCredentials {
 	username: string;
@@ -90,6 +103,39 @@ export class PosApi {
 	async products(): Promise<PosProduct[]> {
 		const res = await this.req<{ products: PosProduct[] }>(`${NS}/pos/products`);
 		return res.products;
+	}
+
+	/** Set the absolute on-hand quantity after a recount. */
+	setStock(productId: number, quantity: number): Promise<PosProduct> {
+		return this.req<PosProduct>(`${NS}/pos/products/${productId}/stock`, {
+			method: 'POST',
+			body: { quantity },
+		});
+	}
+
+	/** Record a salida interna (Malva, empleado, merma…). Decrements stock; never revenue. */
+	createWithdrawal(input: WithdrawalInput): Promise<Withdrawal> {
+		return this.req<Withdrawal>(`${NS}/pos/withdrawals`, { method: 'POST', body: input });
+	}
+
+	/** Salidas internas history + per-destination totals for a day (default: today). */
+	withdrawals(date?: string): Promise<WithdrawalsResponse> {
+		return this.req<WithdrawalsResponse>(`${NS}/pos/withdrawals${date ? `?date=${date}` : ''}`);
+	}
+
+	/** Shared employee-name list for the "¿Quién lo lleva?" picker. */
+	async employees(): Promise<string[]> {
+		const res = await this.req<EmployeesResponse>(`${NS}/pos/employees`);
+		return res.employees;
+	}
+
+	/** Add a name to the shared list. Duplicates succeed without change. */
+	async addEmployee(name: string): Promise<string[]> {
+		const res = await this.req<EmployeesResponse>(`${NS}/pos/employees`, {
+			method: 'POST',
+			body: { name },
+		});
+		return res.employees;
 	}
 }
 

@@ -12,7 +12,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth, usePosApi } from '../../lib/auth';
-import { color, money, radius, space, type } from '../../lib/theme';
+import { color, DESTINATION_LABELS, money, radius, space, type } from '../../lib/theme';
 
 import { confirmDialog } from '../../lib/dialog';
 
@@ -118,6 +118,26 @@ export default function CorteScreen() {
 								))}
 							</>
 						)}
+
+						{data.withdrawals && data.withdrawals.pieces > 0 && (
+							<>
+								<Text style={styles.sectionHeading}>Salidas internas</Text>
+								{Object.entries(data.withdrawals.by_destination).map(([key, bucket]) => (
+									<Row
+										key={key}
+										label={DESTINATION_LABELS[key] ?? key}
+										value={`${bucket.pieces} pz · ${money(bucket.value)}`}
+									/>
+								))}
+								<Row
+									label="Total salidas"
+									value={`${data.withdrawals.pieces} pz · ${money(data.withdrawals.value)}`}
+								/>
+								<Text style={styles.withdrawalNote}>
+									Valuadas a precio de venta. No se cuentan como ingresos.
+								</Text>
+							</>
+						)}
 					</View>
 
 					<View style={styles.session}>
@@ -176,6 +196,7 @@ const styles = StyleSheet.create({
 	rowLabel: { color: color.text, fontSize: type.body, flexShrink: 1 },
 	rowRule: { flex: 1, borderBottomWidth: 1, borderBottomColor: color.hairline, borderStyle: 'dotted' },
 	rowValue: { color: color.text, fontSize: type.body, fontWeight: '600', fontVariant: ['tabular-nums'] },
+	withdrawalNote: { color: color.textSoft, fontSize: type.tiny, marginTop: space(1) },
 	emptyText: { color: color.textSoft, fontSize: type.body, lineHeight: 22 },
 	retry: {
 		backgroundColor: color.text,
