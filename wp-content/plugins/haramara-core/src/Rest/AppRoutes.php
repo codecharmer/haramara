@@ -17,6 +17,7 @@ declare( strict_types=1 );
 namespace Haramara\Core\Rest;
 
 use Haramara\Core\Contracts\Bootable;
+use Haramara\Core\Loyalty\WalletPass;
 use Haramara\Core\Ordering\PickupScheduler;
 use Haramara\Core\Setup\Options;
 
@@ -123,6 +124,9 @@ final class AppRoutes implements Bootable {
 					'open_days'       => array_map( 'intval', (array) ( $pickup['open_days'] ?? array() ) ),
 				),
 				'payments'        => $this->payment_flags(),
+				// Whether this server can sign Apple Wallet loyalty passes; the
+				// app hides the "Agregar a Apple Wallet" button when false.
+				'wallet_pass'     => WalletPass::configured(),
 				/**
 				 * Filter the minimum app version the API still supports. Bumping
 				 * it lets the app force an upgrade prompt without a server error.

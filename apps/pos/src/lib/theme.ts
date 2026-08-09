@@ -76,6 +76,26 @@ export const TRANSITION_LABELS: Record<string, string> = {
 	completed: 'Entregado',
 };
 
+/** Salidas internas destinations (mirrors Woo\Withdrawals::DESTINATIONS). */
+export const DESTINATION_LABELS: Record<string, string> = {
+	malva: 'Malva',
+	empleado: 'Empleado',
+	merma: 'Merma',
+	otro: 'Otro',
+};
+
+// Reuses the status-accent pairs — every fg passes 4.5:1 on its tint.
+const DESTINATION_STYLES: Record<string, { fg: string; bg: string }> = {
+	malva: { fg: color.queued, bg: color.queuedBg },
+	empleado: { fg: color.attention, bg: color.attentionBg },
+	merma: { fg: color.danger, bg: color.dangerBg },
+	otro: { fg: color.muted, bg: color.mutedBg },
+};
+
+export function destinationStyle(destination: string) {
+	return DESTINATION_STYLES[destination] ?? { fg: color.muted, bg: color.mutedBg };
+}
+
 const mxn = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
 export function money(amount: number): string {

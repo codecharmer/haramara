@@ -18,11 +18,26 @@ final class Activator {
 	/** Shared table basename (prefix added at runtime). Mirrored by Sms\Logger. */
 	public const SMS_TABLE = 'haramara_sms_log';
 
+	/** Internal-withdrawals log basename (prefix added at runtime). Mirrored by Woo\Withdrawals. */
+	public const WITHDRAWALS_TABLE = 'haramara_withdrawals';
+
+	/**
+	 * Schema generation. Bump when create_tables() changes so maybe_upgrade()
+	 * re-runs dbDelta on already-active installs (deploys never fire the
+	 * activation hook). Version 1 is the implicit sms-log-only schema of
+	 * plugin 1.0.0; version 2 adds the withdrawals table.
+	 */
+	public const DB_VERSION = 2;
+
+	/** Option that records the schema generation currently installed. */
+	private const DB_VERSION_OPTION = 'haramara_db_version';
+
 	/** Capability that gates the Haramara operations dashboard. */
 	public const CAP = 'manage_haramara';
 
 	public static function activate(): void {
 		self::create_tables();
+		update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
 		Options::install_defaults();
 		self::grant_caps();
 
@@ -41,6 +56,24 @@ final class Activator {
 	public static function deactivate(): void {
 		wp_clear_scheduled_hook( 'haramara_daily_maintenance' );
 		flush_rewrite_rules();
+	}
+
+	/**
+	 * Bring an already-active install up to the current schema.
+	 *
+	 * The activation hook only fires on activate — never on a code deploy — so
+	 * new tables would otherwise silently not exist in production. Called from
+	 * Plugin::boot(); costs one autoloaded-option read when up to date.
+	 */
+	public static function maybe_upgrade(): void {
+		$installed = (int) get_option( self::DB_VERSION_OPTION, 1 );
+		if ( $installed >= self::DB_VERSION ) {
+			return;
+		}
+
+		self::create_tables();
+
+		update_option( self::DB_VERSION_OPTION, self::DB_VERSION );
 	}
 
 	/**
@@ -68,6 +101,31 @@ final class Activator {
 			KEY order_id (order_id),
 			KEY direction (direction),
 			KEY created_at (created_at)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+
+		// Internal withdrawals (salidas internas): one row per product line;
+		// lines of one multi-product withdrawal share a group_key. Business
+		// records — no prune, unlike the SMS log. Used by Woo\Withdrawals.
+		$withdrawals = $wpdb->prefix . self::WITHDRAWALS_TABLE;
+
+		$sql = "CREATE TABLE {$withdrawals} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			created_at DATETIME NOT NULL,
+			group_key VARCHAR(16) NOT NULL,
+			destination VARCHAR(20) NOT NULL,
+			person VARCHAR(80) NOT NULL DEFAULT '',
+			note VARCHAR(200) NOT NULL DEFAULT '',
+			product_id BIGINT UNSIGNED NOT NULL,
+			product_name VARCHAR(200) NOT NULL,
+			quantity SMALLINT UNSIGNED NOT NULL,
+			unit_price DECIMAL(10,2) NOT NULL,
+			user_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			PRIMARY KEY  (id),
+			KEY created_at (created_at),
+			KEY destination_created (destination, created_at),
+			KEY group_key (group_key)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

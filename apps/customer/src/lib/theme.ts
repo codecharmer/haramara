@@ -15,6 +15,8 @@ export const color = {
 	surface: '#1D1916',
 	/** Deeper wells (inputs, insets) — espresso. */
 	well: '#241D17',
+	/** Deepest ground — noche; the only ink on bone or brass fills. */
+	noche: '#0D0C0A',
 	/** Primary text — bone. */
 	text: '#EFE8DC',
 	/** Secondary text — smoke (6.5:1 on carbon). */

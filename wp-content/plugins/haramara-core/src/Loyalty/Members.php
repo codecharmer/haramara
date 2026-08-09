@@ -212,6 +212,23 @@ final class Members implements Bootable {
 		return $this->bump( $request, self::META_REDEEMED );
 	}
 
+	/**
+	 * Card lookup for sibling services (Wallet pass). Same validation and
+	 * error semantics as the card route, without the REST envelope.
+	 *
+	 * @param string $token Signed card token (`key.hmac`).
+	 * @return array<string,int|string>|\WP_Error
+	 */
+	public function card_for_token( string $token ): array|\WP_Error {
+		$member_id = $this->resolve_token( $token );
+		if ( is_wp_error( $member_id ) ) {
+			return $member_id;
+		}
+		$member_key = (string) get_post_meta( $member_id, self::META_KEY, true );
+
+		return $this->card_payload( $member_id, $member_key );
+	}
+
 	/* ---------------------------------------------------------------------- */
 	/* Internals                                                              */
 	/* ---------------------------------------------------------------------- */

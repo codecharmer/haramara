@@ -85,12 +85,64 @@ export interface DailySummary {
 	by_channel: Record<string, RevenueBucket>;
 	by_payment_method: Record<string, RevenueBucket>;
 	top_items: Array<{ name: string; quantity: number }>;
+	/** Salidas internas (optional: absent on pre-1.1.0 servers). Never revenue. */
+	withdrawals?: WithdrawalTotals;
 }
 
 export interface WalkInInput {
 	items: Array<{ product_id: number; quantity: number }>;
 	payment: WalkInPayment;
 	note?: string;
+}
+
+/** Where a salida interna went (mirrored from Woo\Withdrawals::DESTINATIONS). */
+export type WithdrawalDestination = 'malva' | 'empleado' | 'merma' | 'otro';
+
+export interface WithdrawalInput {
+	items: Array<{ product_id: number; quantity: number }>;
+	destination: WithdrawalDestination;
+	/** "¿Quién lo lleva?" — optional free text. */
+	person?: string;
+	note?: string;
+}
+
+export interface WithdrawalLine {
+	product_id: number;
+	name: string;
+	quantity: number;
+	unit_price: number;
+	value: number;
+}
+
+/** One recorded salida interna (Woo\Withdrawals — lines share a group key). */
+export interface Withdrawal {
+	key: string;
+	created_at: string;
+	destination: WithdrawalDestination;
+	destination_label: string;
+	person: string;
+	note: string;
+	registered_by: string;
+	items: WithdrawalLine[];
+	total_quantity: number;
+	total_value: number;
+}
+
+export interface WithdrawalTotals {
+	pieces: number;
+	value: number;
+	by_destination: Partial<Record<WithdrawalDestination, { pieces: number; value: number }>>;
+}
+
+export interface WithdrawalsResponse {
+	date: string;
+	withdrawals: Withdrawal[];
+	totals: WithdrawalTotals;
+}
+
+/** Shared employee-name list backing the withdrawal "¿Quién lo lleva?" picker. */
+export interface EmployeesResponse {
+	employees: string[];
 }
 
 /** Customer-facing order (Rest\AppRoutes::get_order). */
@@ -130,6 +182,8 @@ export interface AppConfig {
 		stripe: boolean;
 		mercadopago: boolean;
 	};
+	/** Whether the server can sign Apple Wallet loyalty passes (absent on pre-1.1.0 servers). */
+	wallet_pass?: boolean;
 	min_app_version: string;
 }
 
