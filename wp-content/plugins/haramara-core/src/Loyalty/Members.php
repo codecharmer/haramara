@@ -176,7 +176,7 @@ final class Members implements Bootable {
 
 		$member_key = (string) get_post_meta( $member_id, self::META_KEY, true );
 
-		return new \WP_REST_Response( $this->card_payload( $member_id, $member_key ), 200 );
+		return $this->respond( $member_id, $member_key );
 	}
 
 	/**
@@ -190,7 +190,7 @@ final class Members implements Bootable {
 			return $member_id;
 		}
 		$member_key = (string) get_post_meta( $member_id, self::META_KEY, true );
-		return new \WP_REST_Response( $this->card_payload( $member_id, $member_key ), 200 );
+		return $this->respond( $member_id, $member_key );
 	}
 
 	/**
@@ -229,6 +229,32 @@ final class Members implements Bootable {
 		return $this->card_payload( $member_id, $member_key );
 	}
 
+	/**
+	 * Member post ID for a bare member key (no signature). The wallet web
+	 * service authenticates serials with its own ApplePass token instead of
+	 * the signed card token.
+	 *
+	 * @param string $member_key The member's public key.
+	 */
+	public function member_id_for_key( string $member_key ): int {
+		return $this->find_member_by_meta( self::META_KEY, $member_key );
+	}
+
+	/**
+	 * Card payload for a bare member key. The caller must have authenticated
+	 * the key already — this does no signature check.
+	 *
+	 * @param string $member_key The member's public key.
+	 * @return array<string,int|string>|\WP_Error
+	 */
+	public function card_for_member_key( string $member_key ): array|\WP_Error {
+		$member_id = $this->member_id_for_key( $member_key );
+		if ( 0 === $member_id ) {
+			return new \WP_Error( 'haramara_loyalty_unknown', __( 'Tarjeta no encontrada.', 'haramara-core' ), array( 'status' => 404 ) );
+		}
+		return $this->card_payload( $member_id, $member_key );
+	}
+
 	/* ---------------------------------------------------------------------- */
 	/* Internals                                                              */
 	/* ---------------------------------------------------------------------- */
@@ -248,7 +274,30 @@ final class Members implements Bootable {
 		update_post_meta( $member_id, $meta, $count + 1 );
 
 		$member_key = (string) get_post_meta( $member_id, self::META_KEY, true );
-		return new \WP_REST_Response( $this->card_payload( $member_id, $member_key ), 200 );
+
+		/**
+		 * Fires after a card counter changed (stamp or redeem).
+		 *
+		 * @param int    $member_id  Member post ID.
+		 * @param string $member_key The member's public key.
+		 */
+		do_action( 'haramara_loyalty_card_updated', $member_id, $member_key );
+
+		return $this->respond( $member_id, $member_key );
+	}
+
+	/**
+	 * Card response with caching disabled. The card mutates at the mostrador
+	 * and production sits behind a proxy that caches any GET without explicit
+	 * cache headers — a stored copy would keep serving pre-stamp counters.
+	 *
+	 * @param int    $member_id  Member post ID.
+	 * @param string $member_key The member's public key.
+	 */
+	private function respond( int $member_id, string $member_key ): \WP_REST_Response {
+		$response = new \WP_REST_Response( $this->card_payload( $member_id, $member_key ), 200 );
+		$response->header( 'Cache-Control', 'no-store' );
+		return $response;
 	}
 
 	/**

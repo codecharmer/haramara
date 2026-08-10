@@ -153,10 +153,50 @@ end to end.
   (b) `passTypeIdentifier`/`teamIdentifier` mismatch vs the certificate, or
   (c) an expired certificate.
 
-## Phase 2 (not built): automatic stamp updates
+## Phase 2 (plugin 1.2.0): automatic stamp updates
 
-The pass is a snapshot; re-adding it refreshes the counters. Live updates need
-Apple's pass web service (`webServiceURL` + `authenticationToken` in pass.json,
-five registration/update REST endpoints, and direct APNs pushes with a `.p8`
-key — the Expo push pipeline can't be reused). Nothing in Phase 1 blocks
-adding this later; passes would start updating after users re-add them once.
+Passes now update themselves. Each pass carries `webServiceURL`
+(`rest_url('haramara/v1/wallet')`) and a per-pass `authenticationToken`;
+devices register with `Loyalty\WalletWebService` (registrations live in the
+`{prefix}haramara_wallet_devices` table, schema gen 3), and every stamp or
+redeem fires a direct APNs push authenticated with the SAME pass certificate —
+no `.p8` key, no new constants, no configuration beyond the four above.
+Wallet then silently re-fetches the pass (`Last-Modified`/304 aware).
+
+Two operational notes:
+
+- **Passes added before 1.2.0 have no `webServiceURL`** — they update after
+  being re-added once ("Agregar a Apple Wallet" again; same serial, replaces
+  in place).
+- The push goes out inline during the POS stamp/redeem request over HTTP/2
+  (`api.push.apple.com`, client cert = the combined PEM). APNs failures are
+  logged under `WP_DEBUG` and never fail the stamp; a 410 response prunes the
+  dead registration.
+
+Quick prod check that the web service is alive (config-independent):
+
+```bash
+BASE=https://haramara.cafe/wp-json/haramara/v1
+curl -s -o /dev/null -w '%{http_code}\n' -X POST "$BASE/wallet/v1/log" \
+  -H 'Content-Type: application/json' -d '{"logs":[]}'          # 200
+curl -s -o /dev/null -w '%{http_code}\n' \
+  "$BASE/wallet/v1/devices/deadbeefdeadbeef/registrations/pass.mx.haramara.lealtad"  # 204
+curl -s -o /dev/null -w '%{http_code}\n' -X POST \
+  "$BASE/wallet/v1/devices/deadbeefdeadbeef/registrations/pass.mx.haramara.lealtad/notaserialx" \
+  -H 'Authorization: ApplePass forged' -d '{"pushToken":"x"}'   # 401
+```
+
+End-to-end without a device: download a pass (§5), read `authenticationToken`
+from its `pass.json`, register a fake device with it (expect 201), fetch
+`/wallet/v1/passes/…/{serial}` with `Authorization: ApplePass <token>`
+(expect a `.pkpass`), then stamp via the POS and re-fetch to see the new
+counters.
+
+Two proxy-cache facts from pacifica's first prod verification (2026-08-09),
+which apply verbatim here — same cPanel/NGINX stack: every web-service and
+loyalty-card response is deliberately `no-store`, because the NGINX proxy
+caches any GET without explicit cache headers — a stale registrations listing
+made a device "miss" an update until the cache was busted. And don't expect
+304s through the proxy: NGINX strips `If-Modified-Since` on its cache path,
+so PHP re-serves full 200s; the conditional path still works on
+direct/unproxied setups and costs nothing.

@@ -74,6 +74,7 @@ final class Plugin {
 			// Lealtad Haramara (QR members, stamps).
 			Loyalty\Members::class,
 			Loyalty\WalletPass::class,
+			Loyalty\WalletWebService::class,
 
 			// SEO.
 			Seo\MetaTags::class,
