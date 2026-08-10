@@ -21,6 +21,7 @@
 #   8. records salidas internas and checks totals, stock, and input guards
 #   9. exercises the shared employee list (add, case-insensitive dedupe, blank)
 #  10. loyalty wallet pass: forged token 403; valid token without certs 503
+#  11. wallet pass web service: log 200; unknown device 204; forged auth 401
 set -euo pipefail
 
 BASE="${BASE:-http://localhost:8892}"
@@ -205,6 +206,28 @@ CARD_TOKEN=$(api -X POST -H 'Content-Type: application/json' -d '{"device": "ver
 C=$(code "$BASE/wp-json/haramara/v1/app/loyalty/wallet-pass?token=$CARD_TOKEN")
 [ "$C" = "503" ] || fail "wallet-pass on unconfigured server returned $C (want 503)"
 pass "wallet-pass valid token, no certificates -> 503"
+
+# 11. Wallet pass web service (config-independent surface) ---------------------
+SERIAL=$(echo "$CARD_TOKEN" | cut -d. -f1)
+C=$(code -X POST -H 'Content-Type: application/json' -d '{"logs":["verify-api"]}' \
+  "$BASE/wp-json/haramara/v1/wallet/v1/log")
+[ "$C" = "200" ] || fail "wallet web service log returned $C (want 200)"
+pass "wallet web service log -> 200"
+
+C=$(code "$BASE/wp-json/haramara/v1/wallet/v1/devices/verifyapidevice00/registrations/pass.mx.haramara.lealtad")
+[ "$C" = "204" ] || fail "registrations for unknown device returned $C (want 204)"
+pass "wallet registrations, unknown device -> 204"
+
+C=$(code -X POST -H 'Content-Type: application/json' -H 'Authorization: ApplePass forged-token' \
+  -d '{"pushToken":"ExponentPushTokenFake"}' \
+  "$BASE/wp-json/haramara/v1/wallet/v1/devices/verifyapidevice00/registrations/pass.mx.haramara.lealtad/$SERIAL")
+[ "$C" = "401" ] || fail "device registration with forged auth returned $C (want 401)"
+pass "wallet device registration forged auth -> 401"
+
+C=$(code -H 'Authorization: ApplePass forged-token' \
+  "$BASE/wp-json/haramara/v1/wallet/v1/passes/pass.mx.haramara.lealtad/$SERIAL")
+[ "$C" = "401" ] || fail "latest-pass with forged auth returned $C (want 401)"
+pass "wallet latest-pass forged auth -> 401"
 
 echo
 echo "All Phase A checks passed. Test orders left in DB: #$ORDER_ID (pickup), walk-in above."

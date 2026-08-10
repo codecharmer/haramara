@@ -21,13 +21,17 @@ final class Activator {
 	/** Internal-withdrawals log basename (prefix added at runtime). Mirrored by Woo\Withdrawals. */
 	public const WITHDRAWALS_TABLE = 'haramara_withdrawals';
 
+	/** Wallet-pass device registrations basename (prefix added at runtime). Mirrored by Loyalty\WalletWebService. */
+	public const WALLET_DEVICES_TABLE = 'haramara_wallet_devices';
+
 	/**
 	 * Schema generation. Bump when create_tables() changes so maybe_upgrade()
 	 * re-runs dbDelta on already-active installs (deploys never fire the
 	 * activation hook). Version 1 is the implicit sms-log-only schema of
-	 * plugin 1.0.0; version 2 adds the withdrawals table.
+	 * plugin 1.0.0; version 2 adds the withdrawals table; version 3 adds the
+	 * wallet device registrations table.
 	 */
-	public const DB_VERSION = 2;
+	public const DB_VERSION = 3;
 
 	/** Option that records the schema generation currently installed. */
 	private const DB_VERSION_OPTION = 'haramara_db_version';
@@ -126,6 +130,24 @@ final class Activator {
 			KEY created_at (created_at),
 			KEY destination_created (destination, created_at),
 			KEY group_key (group_key)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
+
+		// Wallet-pass device registrations (Apple PassKit web service): which
+		// devices show which pass, and the APNs token to nudge on changes.
+		// Rows come and go with the pass itself. Used by Loyalty\WalletWebService.
+		$wallet_devices = $wpdb->prefix . self::WALLET_DEVICES_TABLE;
+
+		$sql = "CREATE TABLE {$wallet_devices} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			device_id VARCHAR(64) NOT NULL,
+			push_token VARCHAR(200) NOT NULL,
+			serial VARCHAR(64) NOT NULL,
+			created_at DATETIME NOT NULL,
+			PRIMARY KEY  (id),
+			UNIQUE KEY device_serial (device_id, serial),
+			KEY serial (serial)
 		) {$charset_collate};";
 
 		dbDelta( $sql );

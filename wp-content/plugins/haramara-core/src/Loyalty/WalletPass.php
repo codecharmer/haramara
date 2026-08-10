@@ -3,11 +3,11 @@
  * Apple Wallet pass for the Lealtad Haramara card.
  *
  * Serves a signed .pkpass store card for a member token: the same QR the app
- * renders, plus the stamp counters, in a bundle iOS adds to Wallet. Phase 1 is
- * a static pass generated on demand — always current at download time, and
- * re-downloading replaces the pass in place (same passTypeIdentifier +
- * serialNumber). No webServiceURL/authenticationToken yet, so devices never
- * register for automatic updates.
+ * renders, plus the stamp counters, in a bundle iOS adds to Wallet. The pass
+ * carries webServiceURL + authenticationToken, so devices register with
+ * WalletWebService and refresh automatically after every stamp/redeem;
+ * re-downloading also replaces the pass in place (same passTypeIdentifier +
+ * serialNumber).
  *
  * Signing needs a Pass Type ID certificate + the Apple WWDR intermediate,
  * configured EXCLUSIVELY via wp-config constants (see config()) pointing at
@@ -101,25 +101,7 @@ final class WalletPass implements Bootable {
 			return $config;
 		}
 
-		$files = $this->bundle_files( $card, $config );
-		if ( is_wp_error( $files ) ) {
-			return $files;
-		}
-
-		$manifest = wp_json_encode( array_map( 'sha1', $files ) );
-		if ( ! is_string( $manifest ) ) {
-			return self::build_error();
-		}
-
-		$signature = $this->sign_manifest( $manifest, $config );
-		if ( is_wp_error( $signature ) ) {
-			return $signature;
-		}
-
-		$files['manifest.json'] = $manifest;
-		$files['signature']     = $signature;
-
-		$zip = $this->build_archive( $files );
+		$zip = $this->build_pkpass( $card, $config );
 		if ( is_wp_error( $zip ) ) {
 			return $zip;
 		}
@@ -149,6 +131,36 @@ final class WalletPass implements Bootable {
 		return $response;
 	}
 
+	/**
+	 * Build the signed .pkpass bytes for a card payload. Shared by the token
+	 * route above and WalletWebService's authenticated re-serve.
+	 *
+	 * @param array<string,int|string> $card   Card payload (Members).
+	 * @param array<string,string>     $config Signing config (see config()).
+	 * @return string|\WP_Error
+	 */
+	public function build_pkpass( array $card, array $config ): string|\WP_Error {
+		$files = $this->bundle_files( $card, $config );
+		if ( is_wp_error( $files ) ) {
+			return $files;
+		}
+
+		$manifest = wp_json_encode( array_map( 'sha1', $files ) );
+		if ( ! is_string( $manifest ) ) {
+			return self::build_error();
+		}
+
+		$signature = $this->sign_manifest( $manifest, $config );
+		if ( is_wp_error( $signature ) ) {
+			return $signature;
+		}
+
+		$files['manifest.json'] = $manifest;
+		$files['signature']     = $signature;
+
+		return $this->build_archive( $files );
+	}
+
 	// ---------------------------------------------------------------------
 	// Configuration.
 	// ---------------------------------------------------------------------
@@ -156,11 +168,12 @@ final class WalletPass implements Bootable {
 	/**
 	 * Signing configuration from wp-config constants, or the 503 explaining
 	 * what is missing. Never stored in the database, mirroring the Twilio
-	 * secrets rule in Options::sms().
+	 * secrets rule in Options::sms(). Public so WalletWebService reuses the
+	 * same gates (and the same cert for its APNs pushes).
 	 *
 	 * @return array{pass_type_id:string,team_id:string,cert_path:string,cert_password:string,wwdr_path:string}|\WP_Error
 	 */
-	private static function config(): array|\WP_Error {
+	public static function config(): array|\WP_Error {
 		$config = array(
 			'pass_type_id'  => self::constant( 'HARAMARA_WALLET_PASS_TYPE_ID' ),
 			'team_id'       => self::constant( 'HARAMARA_WALLET_TEAM_ID' ),
@@ -254,26 +267,30 @@ final class WalletPass implements Bootable {
 	 */
 	private function pass_definition( array $card, array $config ): array {
 		return array(
-			'formatVersion'      => 1,
-			'passTypeIdentifier' => $config['pass_type_id'],
-			'serialNumber'       => (string) $card['memberKey'],
-			'teamIdentifier'     => $config['team_id'],
-			'organizationName'   => 'Haramara Café',
-			'description'        => __( 'Tarjeta de lealtad Haramara', 'haramara-core' ),
-			'logoText'           => 'Haramara',
+			'formatVersion'       => 1,
+			'passTypeIdentifier'  => $config['pass_type_id'],
+			'serialNumber'        => (string) $card['memberKey'],
+			'teamIdentifier'      => $config['team_id'],
+			// Phase 2: devices register against WalletWebService for automatic
+			// updates. Apple appends /v1/… to this base URL.
+			'webServiceURL'       => untrailingslashit( rest_url( self::NS . '/wallet' ) ),
+			'authenticationToken' => WalletWebService::auth_token( (string) $card['memberKey'] ),
+			'organizationName'    => 'Haramara Café',
+			'description'         => __( 'Tarjeta de lealtad Haramara', 'haramara-core' ),
+			'logoText'            => 'Haramara',
 			// Brand palette (DESIGN.md): noche ground, bone text, brass labels —
 			// brass is light, never a fill under bone text.
-			'foregroundColor'    => 'rgb(239,232,220)',
-			'backgroundColor'    => 'rgb(13,12,10)',
-			'labelColor'         => 'rgb(200,165,102)',
-			'barcodes'           => array(
+			'foregroundColor'     => 'rgb(239,232,220)',
+			'backgroundColor'     => 'rgb(13,12,10)',
+			'labelColor'          => 'rgb(200,165,102)',
+			'barcodes'            => array(
 				array(
 					'format'          => 'PKBarcodeFormatQR',
 					'message'         => (string) $card['token'],
 					'messageEncoding' => 'iso-8859-1',
 				),
 			),
-			'storeCard'          => array(
+			'storeCard'           => array(
 				'primaryFields'   => array(
 					array(
 						'key'   => 'stamps',
