@@ -1,6 +1,6 @@
 export * from './types';
 export { ApiError, type HttpConfig } from './http';
-export { PosApi, type PosCredentials } from './pos';
+export { PosApi, newIdempotencyKey, type PosCredentials } from './pos';
 export { AppApi } from './app';
 export {
 	StoreApi,

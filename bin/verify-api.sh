@@ -22,6 +22,17 @@
 #   9. exercises the shared employee list (add, case-insensitive dedupe, blank)
 #  10. loyalty wallet pass: forged token 403; valid token without certs 503
 #  11. wallet pass web service: log 200; unknown device 204; forged auth 401
+#  12. operator identity: roster, PIN login, bad PIN 401, forged token 401,
+#      supervisor step-up, cajero refused, operator stamped on a walk-in
+#  13. idempotency: same key replays the original order without a second charge
+#  14. loyalty stamp is guarded — a double-tap must not stamp twice
+#  15. turno de caja: open (fondo), summary redaction while open, cash drop,
+#      blind close computes expected+variance server-side, double-close 409
+#  16. ajustes: folio on every walk-in; same-shift void by cajero (restocks,
+#      ledger row); discount over threshold 403 without supervisor; comp with
+#      authorization rings \$0 and lands in the adjustments buckets
+#  17. propinas: a cash tip never touches revenue or the order total, but DOES
+#      raise the blind close's expected cash; card tips touch neither
 set -euo pipefail
 
 BASE="${BASE:-http://localhost:8892}"
@@ -228,6 +239,197 @@ C=$(code -H 'Authorization: ApplePass forged-token' \
   "$BASE/wp-json/haramara/v1/wallet/v1/passes/pass.mx.haramara.lealtad/$SERIAL")
 [ "$C" = "401" ] || fail "latest-pass with forged auth returned $C (want 401)"
 pass "wallet latest-pass forged auth -> 401"
+
+# 12. Operator identity (Staff\Operators) -----------------------------------
+#
+# Requires at least one person with a NIP. Seed on wp-env with:
+#   npm run env:cli -- eval 'Haramara\Core\Staff\Operators::set_pin( Haramara\Core\Staff\Operators::people()[0]["key"], "4321" );'
+# Skipped (not failed) when the roster is empty — the PIN layer is optional
+# until the owner configures it, and this script must stay green before then.
+ROSTER=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/operators")
+OP_KEY=$(echo "$ROSTER" | $JQ -r '.operators[0].key // empty')
+
+if [ -z "$OP_KEY" ]; then
+  printf '\033[33mSKIP\033[0m operator checks — no one has a NIP set yet\n'
+else
+  echo "$ROSTER" | $JQ -e '[.operators[] | select(has("pin_hash"))] | length == 0' >/dev/null \
+    || fail "roster leaked pin_hash"
+  pass "/pos/operators (no pin_hash exposed)"
+
+  C=$(code "${AUTH[@]}" -X POST -H 'Content-Type: application/json' \
+    -d "{\"operator\":\"$OP_KEY\",\"pin\":\"000000\"}" "$BASE/wp-json/haramara/v1/pos/operator/login")
+  [ "$C" = "401" ] || [ "$C" = "429" ] || fail "wrong PIN returned $C (want 401, or 429 if throttled)"
+  pass "wrong PIN -> $C"
+
+  # OPERATOR_PIN defaults to the seed value above; override for a real install.
+  SESSION=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' \
+    -d "{\"operator\":\"$OP_KEY\",\"pin\":\"${OPERATOR_PIN:-4321}\"}" "$BASE/wp-json/haramara/v1/pos/operator/login")
+  OP_TOKEN=$(echo "$SESSION" | $JQ -r '.token // empty')
+  [ -n "$OP_TOKEN" ] || { echo "$SESSION" | $JQ .; fail "PIN login failed (set OPERATOR_PIN if not 4321)"; }
+  echo "$SESSION" | $JQ -e '.operator | has("pin_hash") | not' >/dev/null || fail "session leaked pin_hash"
+  pass "PIN login -> session token"
+
+  C=$(code "${AUTH[@]}" -X POST -H 'Content-Type: application/json' \
+    -H "X-Pos-Operator: $OP_KEY.9999999999.deadbeef" \
+    -d "{\"items\":[{\"product_id\": $PID, \"quantity\": 1}],\"payment\":\"cash\"}" \
+    "$BASE/wp-json/haramara/v1/pos/walk-in")
+  [ "$C" = "401" ] || fail "forged operator token returned $C (want 401)"
+  pass "forged operator token -> 401"
+
+  # A cajero must not be able to authorize; a supervisor must.
+  SUP_KEY=$(echo "$ROSTER" | $JQ -r '[.operators[] | select(.role == "supervisor")][0].key // empty')
+  if [ -n "$SUP_KEY" ]; then
+    AUTHZ=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' \
+      -d "{\"operator\":\"$SUP_KEY\",\"pin\":\"${SUPERVISOR_PIN:-5555}\",\"action\":\"void\"}" \
+      "$BASE/wp-json/haramara/v1/pos/operator/authorize")
+    echo "$AUTHZ" | $JQ -e '(.authorization | split(".") | length == 3) and (.authorized_by | length > 0)' >/dev/null \
+      || { echo "$AUTHZ" | $JQ .; fail "supervisor step-up shape (set SUPERVISOR_PIN if not 5555)"; }
+    pass "supervisor step-up -> key.expiry.hmac"
+  else
+    printf '\033[33mSKIP\033[0m supervisor step-up — no supervisor on the roster\n'
+  fi
+
+  # 13. Operator stamping + idempotency replay -------------------------------
+  IDK="verify-$(date +%s)-$RANDOM"
+  BODY="{\"items\":[{\"product_id\": $PID, \"quantity\": 1}],\"payment\":\"cash\",\"idempotency_key\":\"$IDK\"}"
+
+  FIRST=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+    -d "$BODY" "$BASE/wp-json/haramara/v1/pos/walk-in")
+  FIRST_ID=$(echo "$FIRST" | $JQ -r '.id // empty')
+  [ -n "$FIRST_ID" ] || { echo "$FIRST" | $JQ .; fail "attributed walk-in failed"; }
+  pass "attributed walk-in -> order #$FIRST_ID"
+
+  STOCK_MID=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/products" \
+    | $JQ -r "[.products[] | select(.id == $PID)][0].stock_quantity")
+
+  RH=$(mktemp)
+  SECOND=$(api -D "$RH" "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+    -d "$BODY" "$BASE/wp-json/haramara/v1/pos/walk-in")
+  SECOND_ID=$(echo "$SECOND" | $JQ -r '.id // empty')
+  [ "$SECOND_ID" = "$FIRST_ID" ] || fail "replay created order #$SECOND_ID instead of returning #$FIRST_ID — DOUBLE CHARGE"
+  grep -qi '^x-pos-idempotent-replay: 1' "$RH" || fail "replay missing X-Pos-Idempotent-Replay header"
+  pass "idempotent replay -> same order #$SECOND_ID"
+
+  STOCK_AFTER=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/products" \
+    | $JQ -r "[.products[] | select(.id == $PID)][0].stock_quantity")
+  [ "$STOCK_AFTER" = "$STOCK_MID" ] || fail "replay moved stock $STOCK_MID -> $STOCK_AFTER (must not decrement twice)"
+  pass "replay did not decrement stock (stayed $STOCK_AFTER)"
+
+  # 14. Loyalty stamp is guarded — a redeem is free product, a stamp is a
+  # discount toward one, and a double-tap at the bar must not count twice.
+  LCARD=$(api -X POST -H 'Content-Type: application/json' \
+    -d '{"device":"verify-api-guard-device"}' "$BASE/wp-json/haramara/v1/app/loyalty/register")
+  LTOKEN=$(echo "$LCARD" | $JQ -r '.token // empty')
+  [ -n "$LTOKEN" ] || { echo "$LCARD" | $JQ .; fail "loyalty register failed"; }
+
+  LIDK="verify-stamp-$(date +%s)-$RANDOM"
+  LBODY="{\"token\":\"$LTOKEN\",\"idempotency_key\":\"$LIDK\"}"
+  S1=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+    -d "$LBODY" "$BASE/wp-json/haramara/v1/pos/loyalty/stamp" | $JQ -r '.stamps')
+  S2=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+    -d "$LBODY" "$BASE/wp-json/haramara/v1/pos/loyalty/stamp" | $JQ -r '.stamps')
+  [ "$S1" = "$S2" ] || fail "replayed stamp incremented $S1 -> $S2 (must not stamp twice)"
+  pass "loyalty stamp replay did not double-count (stayed $S2)"
+
+  # 15. Turno de caja — only when no shift is already open (a stray open shift
+  # from manual testing must not make CI ring against it).
+  CURRENT=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/shift/current" | $JQ -r '.shift // empty')
+  if [ -n "$CURRENT" ]; then
+    printf '\033[33mSKIP\033[0m shift checks — a shift is already open\n'
+  else
+    SIDK="verify-shift-$(date +%s)-$RANDOM"
+    OPENED=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"opening_float\": 500, \"idempotency_key\": \"$SIDK-open\"}" "$BASE/wp-json/haramara/v1/pos/shift/open")
+    echo "$OPENED" | $JQ -e '.shift.status == "open" and (.shift | has("expected_cash") | not)' >/dev/null \
+      || { echo "$OPENED" | $JQ .; fail "shift open (expected_cash must be absent)"; }
+    pass "shift open, no expected_cash exposed"
+
+    # While open, a non-supervisor summary must redact everything cash derives from.
+    RED=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/summary")
+    # Empty PHP maps encode as [] not {}, and jq has() errors on arrays.
+    echo "$RED" | $JQ -e '(.cash_visible == false) and (has("revenue") | not) and ((.by_payment_method | if type == "object" then has("cod") else false end) | not) and ((.by_channel | if type == "object" then has("walkin_cash") else false end) | not)' >/dev/null \
+      || { echo "$RED" | $JQ '{cash_visible, revenue}'; fail "summary not redacted while shift open"; }
+    pass "summary redacted for non-supervisor while shift open"
+
+    api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"items\":[{\"product_id\": $PID, \"quantity\": 1}],\"payment\":\"cash\",\"idempotency_key\":\"$SIDK-sale\"}" \
+      "$BASE/wp-json/haramara/v1/pos/walk-in" >/dev/null
+    SALE_TOTAL=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/products" \
+      | $JQ -r "[.products[] | select(.id == $PID)][0].price")
+
+    api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"amount\": 100, \"idempotency_key\": \"$SIDK-drop\"}" "$BASE/wp-json/haramara/v1/pos/shift/cash-drop" >/dev/null
+
+    # 16. Ajustes — inside the open shift, where the cajero void path lives.
+    VSALE=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"items\":[{\"product_id\": $PID, \"quantity\": 1}],\"payment\":\"cash\",\"idempotency_key\":\"$SIDK-vsale\"}" \
+      "$BASE/wp-json/haramara/v1/pos/walk-in")
+    VID=$(echo "$VSALE" | $JQ -r '.id // empty')
+    echo "$VSALE" | $JQ -e '.folio | test("^F[0-9A-Z]+-[0-9A-F]{4}$")' >/dev/null || fail "walk-in missing folio"
+    pass "walk-in carries folio $(echo "$VSALE" | $JQ -r '.folio')"
+
+    VOID=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"reason_code\":\"error_captura\",\"idempotency_key\":\"$SIDK-void\"}" \
+      "$BASE/wp-json/haramara/v1/pos/orders/$VID/void")
+    echo "$VOID" | $JQ -e '.event.type == "void" and (.event.operator | length > 0)' >/dev/null \
+      || { echo "$VOID" | $JQ .; fail "same-shift cajero void"; }
+    pass "same-shift void by cajero -> ledger row"
+
+    C=$(code "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"items\":[{\"product_id\": $PID, \"quantity\": 1}],\"payment\":\"cash\",\"discount\":{\"amount\": 999, \"reason_code\":\"ajuste_precio\"},\"idempotency_key\":\"$SIDK-bigdisc\"}" \
+      "$BASE/wp-json/haramara/v1/pos/walk-in")
+    [ "$C" = "400" ] || [ "$C" = "403" ] || fail "oversize/over-threshold discount returned $C (want 400/403)"
+    pass "big discount without supervisor -> $C"
+
+    if [ -n "$SUP_KEY" ]; then
+      DAUTH=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' \
+        -d "{\"operator\":\"$SUP_KEY\",\"pin\":\"${SUPERVISOR_PIN:-5555}\",\"action\":\"discount\"}" \
+        "$BASE/wp-json/haramara/v1/pos/operator/authorize" | $JQ -r '.authorization // empty')
+      COMP=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+        -d "{\"items\":[{\"product_id\": $PID, \"quantity\": 1}],\"payment\":\"cash\",\"discount\":{\"amount\": $SALE_TOTAL, \"reason_code\":\"cortesia\",\"authorization\":\"$DAUTH\"},\"idempotency_key\":\"$SIDK-comp\"}" \
+        "$BASE/wp-json/haramara/v1/pos/walk-in")
+      echo "$COMP" | $JQ -e '.total == 0' >/dev/null || { echo "$COMP" | $JQ '{total}'; fail "comp did not zero the ticket"; }
+      pass "cortesía with authorization -> \$0 ticket"
+
+      ADJ=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/summary" | $JQ -r '.adjustments.by_type | keys | join(",")')
+      case "$ADJ" in *void*) pass "adjustments buckets present ($ADJ)";; *) fail "no void bucket in adjustments ($ADJ)";; esac
+    else
+      printf '\033[33mSKIP\033[0m discount/comp authorization — no supervisor\n'
+    fi
+
+    # 17. Propinas — the asymmetry IS the check: revenue and order total must
+    # not move, expected cash must (cash tip only).
+    TSALE=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"items\":[{\"product_id\": $PID, \"quantity\": 1}],\"payment\":\"cash\",\"tip\":{\"amount\": 10, \"method\":\"cash\"},\"idempotency_key\":\"$SIDK-tip\"}" \
+      "$BASE/wp-json/haramara/v1/pos/walk-in")
+    echo "$TSALE" | $JQ -e --argjson p "$SALE_TOTAL" '.total == $p and .tip == 10 and .tip_method == "cash"' >/dev/null \
+      || { echo "$TSALE" | $JQ '{total, tip, tip_method}'; fail "cash tip leaked into the order total"; }
+    pass "cash tip stored as meta, order total untouched"
+
+    api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"items\":[{\"product_id\": $PID, \"quantity\": 1}],\"payment\":\"card_external\",\"tip\":{\"amount\": 15, \"method\":\"card\"},\"idempotency_key\":\"$SIDK-tipcard\"}" \
+      "$BASE/wp-json/haramara/v1/pos/walk-in" >/dev/null
+
+    CLOSED=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"declared_cash\": 480, \"idempotency_key\": \"$SIDK-close\"}" "$BASE/wp-json/haramara/v1/pos/shift/close")
+    # fondo 500 + two cash sales + cash tip 10 − drop 100. The card sale and
+    # its card tip must contribute NOTHING here.
+    WANT=$(echo "$SALE_TOTAL" | $JQ -r "500 + (2 * .) + 10 - 100")
+    echo "$CLOSED" | $JQ -e --argjson want "$WANT" '.shift.expected_cash == $want and .shift.variance == (480 - $want)' >/dev/null \
+      || { echo "$CLOSED" | $JQ .; fail "arqueo math wrong (want expected=$WANT)"; }
+    pass "blind close: expected=$WANT, variance=$(echo "$CLOSED" | $JQ -r '.shift.variance')"
+
+    C=$(code "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+      -d "{\"declared_cash\": 1, \"idempotency_key\": \"$SIDK-close2\"}" "$BASE/wp-json/haramara/v1/pos/shift/close")
+    [ "$C" = "409" ] || fail "second close returned $C (want 409)"
+    pass "double close -> 409"
+
+    TIPS=$(api "${AUTH[@]}" -H "X-Pos-Operator: $OP_TOKEN" "$BASE/wp-json/haramara/v1/pos/summary" \
+      | $JQ -r '.tips.total // empty')
+    [ -n "$TIPS" ] || fail "tips block missing from summary after close"
+    pass "tips visible after close (total \$$TIPS today)"
+  fi
+fi
 
 echo
 echo "All Phase A checks passed. Test orders left in DB: #$ORDER_ID (pickup), walk-in above."

@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { IncomingOrderCard } from '../../components/incoming-order-card';
 import { isAuthError, useAuth } from '../../lib/auth';
+import { isOperatorError, useOperator } from '../../lib/operator';
 import { useAcceptOrder, useQueueQuery } from '../../lib/queue';
 import { color, radius, space, type } from '../../lib/theme';
 
@@ -22,12 +23,20 @@ export default function IncomingScreen() {
 	const router = useRouter();
 	const insets = useSafeAreaInsets();
 
+	const { lock: lockOperator } = useOperator();
 	const queue = useQueueQuery();
 	const accept = useAcceptOrder();
 
-	// Credenciales revocadas → de vuelta al inicio de sesión.
+	// Credenciales del dispositivo revocadas → de vuelta al inicio de sesión.
 	if (queue.error && isAuthError(queue.error)) {
 		void signOut();
+	}
+
+	// Sesión del operador vencida → solo pedir el NIP de nuevo. Cerrar la
+	// sesión del dispositivo aquí obligaría a recapturar servidor y contraseña
+	// de aplicación a media jornada.
+	if (queue.error && isOperatorError(queue.error)) {
+		void lockOperator();
 	}
 
 	const orders = queue.data?.orders ?? [];

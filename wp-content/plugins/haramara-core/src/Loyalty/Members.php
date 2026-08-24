@@ -30,7 +30,9 @@ declare( strict_types=1 );
 namespace Haramara\Core\Loyalty;
 
 use Haramara\Core\Contracts\Bootable;
+use Haramara\Core\Rest\Idempotency;
 use Haramara\Core\Setup\Activator;
+use Haramara\Core\Staff\Operators;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -119,7 +121,10 @@ final class Members implements Bootable {
 					'methods'             => \WP_REST_Server::CREATABLE,
 					'callback'            => 'stamp' === $action ? array( $this, 'stamp' ) : array( $this, 'redeem' ),
 					'permission_callback' => array( $this, 'pos_permission' ),
-					'args'                => array( 'token' => $token_arg ),
+					'args'                => array(
+						'token'           => $token_arg,
+						'idempotency_key' => Idempotency::arg(),
+					),
 				)
 			);
 		}
@@ -265,6 +270,24 @@ final class Members implements Bootable {
 	 * @return \WP_REST_Response|\WP_Error
 	 */
 	private function bump( \WP_REST_Request $request, string $meta ) {
+		// Guarded like a sale: a redeem is free product, and a double-tap or a
+		// retried request must not consume the card twice.
+		return Idempotency::guard(
+			$request,
+			'pos/loyalty',
+			fn( $operator ) => $this->apply_bump( $request, $meta, $operator )
+		);
+	}
+
+	/**
+	 * Increment one card counter and record who did it.
+	 *
+	 * @param \WP_REST_Request         $request  Incoming staff request.
+	 * @param string                   $meta     Counter meta key to increment.
+	 * @param array<string,mixed>|null $operator Resolved counter operator.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	private function apply_bump( \WP_REST_Request $request, string $meta, $operator ) {
 		$member_id = $this->resolve_token( (string) $request['token'] );
 		if ( is_wp_error( $member_id ) ) {
 			return $member_id;
@@ -272,6 +295,12 @@ final class Members implements Bootable {
 
 		$count = (int) get_post_meta( $member_id, $meta, true );
 		update_post_meta( $member_id, $meta, $count + 1 );
+
+		// Who served the card. Loyalty stays anonymous on the customer side —
+		// this attributes the STAFF action, not the member.
+		if ( is_array( $operator ) ) {
+			update_post_meta( $member_id, '_haramara_last_staff', Operators::public_shape( $operator )['name'] );
+		}
 
 		$member_key = (string) get_post_meta( $member_id, self::META_KEY, true );
 

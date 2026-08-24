@@ -1,4 +1,4 @@
-import type { PosProduct, WithdrawalDestination } from '@haramara/api-client';
+import { newIdempotencyKey, type PosProduct, type WithdrawalDestination } from '@haramara/api-client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useMemo, useState } from 'react';
 import {
@@ -96,6 +96,11 @@ export default function InventarioScreen() {
 
 	// ── Nueva salida: ticket-style lines + destination + person + note. ──
 	const [salida, setSalida] = useState<Record<number, number>>({});
+	/**
+	 * One key per salida, steady across retries — a retried salida must not
+	 * decrement stock twice. Re-minted once the salida is recorded.
+	 */
+	const [salidaKey, setSalidaKey] = useState(() => newIdempotencyKey());
 	const [destination, setDestination] = useState<WithdrawalDestination | null>(null);
 	const [person, setPerson] = useState('');
 	const [note, setNote] = useState('');
@@ -158,9 +163,11 @@ export default function InventarioScreen() {
 				destination: destination as WithdrawalDestination,
 				person: person.trim() || undefined,
 				note: note.trim() || undefined,
+				idempotency_key: salidaKey,
 			}),
 		onSuccess: (created) => {
 			setSalida({});
+			setSalidaKey(newIdempotencyKey());
 			setDestination(null);
 			setPerson('');
 			setNote('');

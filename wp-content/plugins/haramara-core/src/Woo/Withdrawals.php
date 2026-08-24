@@ -73,10 +73,12 @@ final class Withdrawals {
 	 * @param string                                        $destination One of DESTINATIONS.
 	 * @param string                                        $person      Optional "¿quién lo lleva?".
 	 * @param string                                        $note        Optional note.
-	 * @param int                                           $user_id     Staff account recording the salida.
+	 * @param int                                           $user_id     Device account recording the salida (the tablet).
+	 * @param array{key?:string,name?:string,role?:string}  $operator    Counter operator, from Staff\Operators. Empty
+	 *                                                                   when the tablet sent no operator header.
 	 * @return array<string,mixed>|\WP_Error Serialized withdrawal group, or error.
 	 */
-	public static function create( array $items, string $destination, string $person = '', string $note = '', int $user_id = 0 ) {
+	public static function create( array $items, string $destination, string $person = '', string $note = '', int $user_id = 0, array $operator = array() ) {
 		if ( ! function_exists( 'wc_get_product' ) || ! function_exists( 'wc_update_product_stock' ) ) {
 			return new \WP_Error(
 				'haramara_wc_unavailable',
@@ -108,6 +110,12 @@ final class Withdrawals {
 		$person     = substr( sanitize_text_field( $person ), 0, 80 );
 		$note       = substr( sanitize_textarea_field( $note ), 0, 200 );
 
+		// `person` is who the goods went TO; `operator_*` is who recorded it.
+		// Conflating the two is how a salida loses its accountability — the
+		// device user_id only identifies the tablet, not the human.
+		$operator_key  = substr( sanitize_key( (string) ( $operator['key'] ?? '' ) ), 0, 32 );
+		$operator_name = substr( sanitize_text_field( (string) ( $operator['name'] ?? '' ) ), 0, 80 );
+
 		$out = array();
 		foreach ( $lines as $line ) {
 			$product  = $line['product'];
@@ -119,18 +127,20 @@ final class Withdrawals {
 			$wpdb->insert( // phpcs:ignore WordPress.DB.DirectDatabaseQuery
 				self::table(),
 				array(
-					'created_at'   => $created_at,
-					'group_key'    => $group_key,
-					'destination'  => $destination,
-					'person'       => $person,
-					'note'         => $note,
-					'product_id'   => $product->get_id(),
-					'product_name' => substr( $product->get_name(), 0, 200 ),
-					'quantity'     => $quantity,
-					'unit_price'   => $price,
-					'user_id'      => $user_id,
+					'created_at'    => $created_at,
+					'group_key'     => $group_key,
+					'destination'   => $destination,
+					'person'        => $person,
+					'note'          => $note,
+					'product_id'    => $product->get_id(),
+					'product_name'  => substr( $product->get_name(), 0, 200 ),
+					'quantity'      => $quantity,
+					'unit_price'    => $price,
+					'user_id'       => $user_id,
+					'operator_key'  => $operator_key,
+					'operator_name' => $operator_name,
 				),
-				array( '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%f', '%d' )
+				array( '%s', '%s', '%s', '%s', '%s', '%d', '%s', '%d', '%f', '%d', '%s', '%s' )
 			);
 
 			$out[] = array(
@@ -151,7 +161,8 @@ final class Withdrawals {
 			'destination_label' => $labels[ $destination ],
 			'person'            => $person,
 			'note'              => $note,
-			'registered_by'     => self::display_name( $user_id ),
+			'registered_by'     => '' !== $operator_name ? $operator_name : self::display_name( $user_id ),
+			'operator'          => $operator_name,
 			'items'             => $out,
 			'total_quantity'    => array_sum( array_column( $out, 'quantity' ) ),
 			'total_value'       => round( array_sum( array_column( $out, 'value' ) ), 2 ),
@@ -198,7 +209,12 @@ final class Withdrawals {
 					'destination_label' => $labels[ $row['destination'] ] ?? (string) $row['destination'],
 					'person'            => (string) $row['person'],
 					'note'              => (string) $row['note'],
-					'registered_by'     => self::display_name( (int) $row['user_id'] ),
+					// Prefer the counter operator; fall back to the device
+					// account for rows written before PIN sign-in existed.
+					'registered_by'     => '' !== (string) ( $row['operator_name'] ?? '' )
+						? (string) $row['operator_name']
+						: self::display_name( (int) $row['user_id'] ),
+					'operator'          => (string) ( $row['operator_name'] ?? '' ),
 					'items'             => array(),
 					'total_quantity'    => 0,
 					'total_value'       => 0.0,

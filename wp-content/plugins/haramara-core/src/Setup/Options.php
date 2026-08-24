@@ -29,6 +29,7 @@ final class Options implements Bootable {
 	public const SMS       = 'haramara_sms';
 	public const SEO       = 'haramara_seo';
 	public const EMPLOYEES = 'haramara_employees';
+	public const POS       = 'haramara_pos';
 
 	/** Hard ceiling for the employee-name list (POS picker stays scannable). */
 	private const MAX_EMPLOYEES = 50;
@@ -47,6 +48,7 @@ final class Options implements Bootable {
 			self::SMS       => array( $this, 'sanitize_sms' ),
 			self::SEO       => array( $this, 'sanitize_seo' ),
 			self::EMPLOYEES => array( $this, 'sanitize_employees' ),
+			self::POS       => array( $this, 'sanitize_pos' ),
 		);
 		foreach ( $groups as $name => $sanitizer ) {
 			register_setting(
@@ -124,8 +126,19 @@ final class Options implements Bootable {
 				'organization_logo' => 0,
 				'price_range'       => '$$',
 			),
+			// `names` is the legacy shape and stays the mirror the salidas
+			// person picker reads; `people` is the operator roster added for
+			// PIN sign-in (see Staff\Operators). Writers keep the two in sync.
 			self::EMPLOYEES => array(
-				'names' => array(),
+				'names'  => array(),
+				'people' => array(),
+			),
+			// POS policy knobs. Thresholds are policy the OWNER tunes; the
+			// enforcement lives in the domain classes, never the app.
+			self::POS       => array(
+				// A sale-time discount above this % of the subtotal needs a
+				// supervisor authorization.
+				'discount_supervisor_pct' => 15,
 			),
 		);
 	}
@@ -194,7 +207,17 @@ final class Options implements Bootable {
 		}
 
 		$names[] = $name;
-		update_option( self::EMPLOYEES, array( 'names' => $names ) );
+
+		// Keep the operator roster in step: the new person is active with no
+		// PIN, so they can be the subject of a salida immediately but cannot
+		// sign in until the owner sets a NIP in Ajustes → Empleados.
+		$stored = get_option( self::EMPLOYEES, array() );
+		$stored = is_array( $stored ) ? $stored : array();
+
+		$stored['names']  = $names;
+		$stored['people'] = \Haramara\Core\Staff\Operators::reconcile( $names, (array) ( $stored['people'] ?? array() ) );
+
+		update_option( self::EMPLOYEES, $stored );
 
 		return $names;
 	}
@@ -222,6 +245,11 @@ final class Options implements Bootable {
 			}
 		}
 		return $sms;
+	}
+
+	/** @return array<string,mixed> */
+	public static function pos(): array {
+		return self::group( self::POS );
 	}
 
 	/** Convenience single-value getter. */
@@ -320,7 +348,17 @@ final class Options implements Bootable {
 	}
 
 	/**
-	 * Sanitize the employee-name list saved from the admin Empleados tab.
+	 * Sanitize the employee list saved from the admin Empleados tab.
+	 *
+	 * Two shapes travel together: `names` (the flat list the salidas picker
+	 * reads) and `people` (the operator roster with PIN hashes and roles).
+	 * The names are the editable field; people are *reconciled* against them so
+	 * a rename or reorder never destroys a PIN — and, critically, so saving the
+	 * tab does not silently wipe the roster.
+	 *
+	 * Neither roles nor PIN hashes are posted by this form — both are managed
+	 * by the roster tool in Settings (own nonce, admin_post) so that a
+	 * JS-cloned repeatable row can never misalign a role with a person.
 	 *
 	 * @param mixed $value Raw option value.
 	 * @return array<string,mixed>
@@ -340,7 +378,44 @@ final class Options implements Bootable {
 			}
 			$names[] = $name;
 		}
-		return array( 'names' => array_slice( $names, 0, self::MAX_EMPLOYEES ) );
+		$names = array_slice( $names, 0, self::MAX_EMPLOYEES );
+
+		// Pick the reconciliation baseline by who is writing.
+		//
+		// register_setting() means this sanitizer runs on EVERY update_option()
+		// for this group, not just on the settings form — including
+		// Staff\Operators::persist(). Always reading the baseline from storage
+		// would therefore discard whatever the caller is trying to save: a PIN
+		// hash could never be written, because reconcile() would rebuild the
+		// roster from the pre-write copy that does not have it.
+		//
+		// So: a payload that carries `people` is a programmatic write and is its
+		// own baseline; a payload without it is the admin form (which never
+		// posts pin_hash) and reconciles against storage, preserving hashes
+		// across renames and reorders.
+		if ( isset( $value['people'] ) && is_array( $value['people'] ) ) {
+			$baseline = $value['people'];
+		} else {
+			$stored   = get_option( self::EMPLOYEES, array() );
+			$stored   = is_array( $stored ) ? $stored : array();
+			$baseline = (array) ( $stored['people'] ?? array() );
+		}
+
+		return array(
+			'names'  => $names,
+			'people' => \Haramara\Core\Staff\Operators::reconcile( $names, $baseline ),
+		);
+	}
+
+	/**
+	 * @param mixed $value
+	 * @return array<string,mixed>
+	 */
+	public function sanitize_pos( mixed $value ): array {
+		$value = is_array( $value ) ? $value : array();
+		return array(
+			'discount_supervisor_pct' => max( 0, min( 100, (int) ( $value['discount_supervisor_pct'] ?? 15 ) ) ),
+		);
 	}
 
 	/**

@@ -59,6 +59,9 @@ final class Plugin {
 			Woo\Support::class,
 			Woo\Inventory::class,
 
+			// Catálogo: grupos de modificadores.
+			Catalog\ModifierGroups::class,
+
 			// Reserve & pickup ordering.
 			Ordering\PickupScheduler::class,
 			Ordering\OrderMeta::class,
@@ -81,10 +84,13 @@ final class Plugin {
 			Seo\SchemaGraph::class,
 
 			// REST + CLI.
+			Rest\Idempotency::class,
 			Rest\Routes::class,
 			Rest\AccessGate::class,
 			Rest\AppRoutes::class,
 			Rest\PosRoutes::class,
+			Rest\CatalogRoutes::class,
+			Rest\FiscalRoutes::class,
 			Cli\Commands::class,
 
 			// Admin operations.

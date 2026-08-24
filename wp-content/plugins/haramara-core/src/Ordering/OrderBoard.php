@@ -203,10 +203,22 @@ final class OrderBoard {
 	public static function serialize_order( \WC_Order $order ): array {
 		$items = array();
 		foreach ( $order->get_items() as $item ) {
+			// Visible modifier meta ("Leche: Avena (+$15.00)") for tickets and
+			// the POS detail; hidden keys (underscore) stay hidden.
+			$modifiers = array();
+			foreach ( $item->get_meta_data() as $meta ) {
+				$data = $meta->get_data();
+				$key  = (string) $data['key'];
+				if ( '' !== $key && '_' !== $key[0] && is_scalar( $data['value'] ) ) {
+					$modifiers[] = $key . ': ' . (string) $data['value'];
+				}
+			}
+
 			$items[] = array(
-				'name'     => $item->get_name(),
-				'quantity' => (int) $item->get_quantity(),
-				'total'    => (float) $order->get_line_total( $item, true ),
+				'name'      => $item->get_name(),
+				'quantity'  => (int) $item->get_quantity(),
+				'total'     => (float) $order->get_line_total( $item, true ),
+				'modifiers' => $modifiers,
 			);
 		}
 
@@ -216,6 +228,9 @@ final class OrderBoard {
 		return array(
 			'id'                   => $order->get_id(),
 			'number'               => (string) $order->get_order_number(),
+			'folio'                => Folios::for_order( $order->get_id() ),
+			'tip'                  => (float) $order->get_meta( WalkInOrders::META_TIP ),
+			'tip_method'           => (string) $order->get_meta( WalkInOrders::META_TIP_METHOD ),
 			'status'               => $order->get_status(),
 			'status_label'         => function_exists( 'wc_get_order_status_name' )
 				? (string) wc_get_order_status_name( $order->get_status() )
