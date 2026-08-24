@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { OrderCard } from '../../components/order-card';
 import { isAuthError, useAuth, usePosApi } from '../../lib/auth';
+import { isOperatorError, useOperator } from '../../lib/operator';
 import { color, radius, space, type } from '../../lib/theme';
 
 import { notify } from '../../lib/dialog';
@@ -30,6 +31,7 @@ export default function BoardScreen() {
 	// undefined = today in the bakery's timezone (the server decides).
 	const [selectedDate, setSelectedDate] = useState<string | undefined>(undefined);
 	const [busy, setBusy] = useState<{ orderId: number; status: StaffTransition } | null>(null);
+	const { lock: lockOperator } = useOperator();
 
 	const board = useQuery({
 		queryKey: ['board', selectedDate ?? 'today', includeDone],
@@ -40,9 +42,16 @@ export default function BoardScreen() {
 		placeholderData: keepPreviousData,
 	});
 
-	// Credenciales revocadas → de vuelta al inicio de sesión.
+	// Credenciales del dispositivo revocadas → de vuelta al inicio de sesión.
 	if (board.error && isAuthError(board.error)) {
 		void signOut();
+	}
+
+	// Sesión del operador vencida → solo pedir el NIP de nuevo. Cerrar la
+	// sesión del dispositivo aquí obligaría a recapturar servidor y contraseña
+	// de aplicación a media jornada.
+	if (board.error && isOperatorError(board.error)) {
+		void lockOperator();
 	}
 
 	const transition = useMutation({

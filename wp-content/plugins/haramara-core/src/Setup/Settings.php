@@ -43,6 +43,7 @@ final class Settings implements Bootable {
 	public function boot(): void {
 		add_action( 'admin_menu', array( $this, 'register_menu' ), 10 );
 		add_action( 'admin_post_haramara_run_content_install', array( $this, 'handle_content_install' ) );
+		add_action( 'admin_post_haramara_save_operator', array( $this, 'handle_save_operator' ) );
 		add_action( 'wp_ajax_haramara_test_sms', array( $this, 'ajax_test_sms' ) );
 		add_action( 'admin_notices', array( $this, 'maybe_render_notice' ) );
 	}
@@ -297,6 +298,141 @@ final class Settings implements Bootable {
 		echo '<p class="description">' . esc_html__( 'Aparecen en el POS al registrar una salida interna («¿Quién lo lleva?»). Desde el POS también se pueden agregar nombres.', 'haramara-core' ) . '</p>';
 		echo '</td></tr>';
 		echo '</tbody></table>';
+
+		$this->render_operator_roster();
+	}
+
+	/**
+	 * NIP + role per person — the operator roster behind PIN sign-in at the POS.
+	 *
+	 * Rendered outside the Settings-API form, with its own nonce and one
+	 * admin-post per person. Two reasons, both load-bearing: PIN hashes must
+	 * never round-trip through a form, and the names list above is a JS-cloned
+	 * repeatable whose row order can shift — index-aligned role fields would
+	 * eventually attach a role to the wrong person.
+	 */
+	private function render_operator_roster(): void {
+		$people = \Haramara\Core\Staff\Operators::people();
+
+		echo '<h3>' . esc_html__( 'NIP y permisos', 'haramara-core' ) . '</h3>';
+		echo '<p class="description">' . esc_html__( 'Cada persona necesita un NIP para poder cobrar en el POS y quedar registrada en cada venta, salida y cancelación. Sin NIP el nombre sigue apareciendo en el selector de salidas, pero no puede iniciar sesión.', 'haramara-core' ) . '</p>';
+
+		if ( empty( $people ) ) {
+			echo '<p>' . esc_html__( 'Agrega nombres arriba y guarda para configurar sus NIP.', 'haramara-core' ) . '</p>';
+			return;
+		}
+
+		echo '<table class="widefat striped" style="max-width:820px;margin-top:12px"><thead><tr>';
+		echo '<th>' . esc_html__( 'Empleado', 'haramara-core' ) . '</th>';
+		echo '<th>' . esc_html__( 'NIP', 'haramara-core' ) . '</th>';
+		echo '<th>' . esc_html__( 'Permiso', 'haramara-core' ) . '</th>';
+		echo '<th></th>';
+		echo '</tr></thead><tbody>';
+
+		foreach ( $people as $person ) {
+			$has_pin = '' !== $person['pin_hash'];
+
+			echo '<tr><form method="post" action="' . esc_url( admin_url( 'admin-post.php' ) ) . '">';
+			wp_nonce_field( 'haramara_save_operator_' . $person['key'] );
+			echo '<input type="hidden" name="action" value="haramara_save_operator">';
+			echo '<input type="hidden" name="operator" value="' . esc_attr( $person['key'] ) . '">';
+
+			echo '<td><strong>' . esc_html( $person['name'] ) . '</strong><br><span class="description">'
+				. ( $has_pin
+					? esc_html__( 'NIP configurado', 'haramara-core' )
+					: esc_html__( 'Sin NIP — no puede iniciar sesión', 'haramara-core' ) )
+				. '</span></td>';
+
+			echo '<td><input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="6" name="pin" value="" autocomplete="off" placeholder="'
+				. esc_attr__( '4 a 6 dígitos', 'haramara-core' ) . '" class="small-text"></td>';
+
+			echo '<td><select name="role">';
+			$labels = array(
+				'cajero'     => __( 'Cajero', 'haramara-core' ),
+				'supervisor' => __( 'Supervisor (autoriza cancelaciones)', 'haramara-core' ),
+			);
+			foreach ( \Haramara\Core\Staff\Operators::ROLES as $role ) {
+				printf(
+					'<option value="%s" %s>%s</option>',
+					esc_attr( $role ),
+					selected( $person['role'], $role, false ),
+					esc_html( $labels[ $role ] ?? $role )
+				);
+			}
+			echo '</select></td>';
+
+			echo '<td>';
+			submit_button( __( 'Guardar', 'haramara-core' ), 'secondary', 'submit', false );
+			if ( $has_pin ) {
+				echo ' <label style="display:block;margin-top:6px"><input type="checkbox" name="clear_pin" value="1"> '
+					. esc_html__( 'Borrar NIP', 'haramara-core' ) . '</label>';
+			}
+			echo '</td>';
+
+			echo '</form></tr>';
+		}
+
+		echo '</tbody></table>';
+	}
+
+	/**
+	 * Save one person's NIP and/or role.
+	 *
+	 * Clearing a NIP also invalidates that person's outstanding POS sessions,
+	 * because the hash is part of the token signing key (see Staff\Operators).
+	 */
+	public function handle_save_operator(): void {
+		if ( ! current_user_can( Activator::CAP ) ) {
+			wp_die( esc_html__( 'No tienes permiso para hacer esto.', 'haramara-core' ) );
+		}
+
+		$key = isset( $_POST['operator'] ) ? sanitize_key( wp_unslash( (string) $_POST['operator'] ) ) : '';
+		check_admin_referer( 'haramara_save_operator_' . $key );
+
+		$people = \Haramara\Core\Staff\Operators::people();
+		$found  = false;
+		$role   = isset( $_POST['role'] ) ? sanitize_key( wp_unslash( (string) $_POST['role'] ) ) : '';
+
+		if ( in_array( $role, \Haramara\Core\Staff\Operators::ROLES, true ) ) {
+			$stored = get_option( Options::EMPLOYEES, array() );
+			$stored = is_array( $stored ) ? $stored : array();
+			$next   = array();
+			foreach ( $people as $person ) {
+				if ( $person['key'] === $key ) {
+					$person['role'] = $role;
+					$found          = true;
+				}
+				$next[] = $person;
+			}
+			$stored['people'] = $next;
+			update_option( Options::EMPLOYEES, $stored );
+		}
+
+		$clear  = ! empty( $_POST['clear_pin'] );
+		$pin    = isset( $_POST['pin'] ) ? preg_replace( '/\D/', '', wp_unslash( (string) $_POST['pin'] ) ) : '';
+		$notice = 'operator-saved';
+
+		if ( $clear ) {
+			\Haramara\Core\Staff\Operators::set_pin( $key, '' );
+			$notice = 'operator-pin-cleared';
+		} elseif ( is_string( $pin ) && '' !== $pin ) {
+			$result = \Haramara\Core\Staff\Operators::set_pin( $key, $pin );
+			$notice = is_wp_error( $result ) ? 'operator-pin-invalid' : 'operator-pin-set';
+		} elseif ( ! $found ) {
+			$notice = 'operator-unchanged';
+		}
+
+		wp_safe_redirect(
+			add_query_arg(
+				array(
+					'page'            => self::SLUG,
+					'tab'             => 'employees',
+					'haramara_notice' => $notice,
+				),
+				admin_url( 'admin.php' )
+			)
+		);
+		exit;
 	}
 
 	/* ---------------------------------------------------------------------- */
@@ -567,6 +703,23 @@ final class Settings implements Bootable {
 			echo '<div class="notice notice-success is-dismissible"><p>';
 			esc_html_e( 'Se solicitó la instalación de contenido de demostración.', 'haramara-core' );
 			echo '</p></div>';
+			return;
+		}
+
+		$operator_notices = array(
+			'operator-pin-set'     => array( 'success', __( 'NIP actualizado. La persona ya puede iniciar sesión en el POS.', 'haramara-core' ) ),
+			'operator-pin-cleared' => array( 'warning', __( 'NIP borrado. Se cerraron sus sesiones abiertas en el POS.', 'haramara-core' ) ),
+			'operator-pin-invalid' => array( 'error', __( 'El NIP debe tener entre 4 y 6 dígitos. No se guardó.', 'haramara-core' ) ),
+			'operator-saved'       => array( 'success', __( 'Permisos actualizados.', 'haramara-core' ) ),
+			'operator-unchanged'   => array( 'info', __( 'No hubo cambios que guardar.', 'haramara-core' ) ),
+		);
+
+		if ( isset( $operator_notices[ $notice ] ) ) {
+			printf(
+				'<div class="notice notice-%s is-dismissible"><p>%s</p></div>',
+				esc_attr( $operator_notices[ $notice ][0] ),
+				esc_html( $operator_notices[ $notice ][1] )
+			);
 		}
 	}
 

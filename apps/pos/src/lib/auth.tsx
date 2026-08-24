@@ -3,7 +3,7 @@
  * held in SecureStore. Exposes a ready PosApi instance once signed in.
  */
 
-import { ApiError, PosApi } from '@haramara/api-client';
+import { ApiError, OPERATOR_SESSION_ERROR_CODES, PosApi } from '@haramara/api-client';
 import * as SecureStore from 'expo-secure-store';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
@@ -96,7 +96,16 @@ export function usePosApi(): PosApi {
 	return api;
 }
 
-/** True when the error means the stored credentials were revoked. */
+/**
+ * True when the error means the stored DEVICE credentials were revoked.
+ *
+ * Callers sign the tablet out on this, so an expired operator session must not
+ * qualify — those are 401s too, and signing out over one would drop the app
+ * password and make the cashier re-enter the server URL mid-service when they
+ * only needed to retype a NIP. Use isOperatorError() for that case.
+ */
 export function isAuthError(e: unknown): boolean {
-	return e instanceof ApiError && (e.status === 401 || e.status === 403);
+	if (!(e instanceof ApiError)) return false;
+	if ((OPERATOR_SESSION_ERROR_CODES as readonly string[]).includes(e.code)) return false;
+	return e.status === 401 || e.status === 403;
 }
