@@ -11,6 +11,9 @@
       "bundleIdentifier": "mx.haramara.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "config": {
+        "usesNonExemptEncryption": false
       }
     },
     "android": {
