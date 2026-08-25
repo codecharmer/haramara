@@ -9,8 +9,6 @@
  * ./tcp-socket.d.ts exist for the same reason.
  */
 
-import type { Socket } from 'react-native-tcp-socket';
-
 import type { PrinterConfig } from './types';
 
 export const DEFAULT_PRINTER_PORT = 9100;
@@ -37,8 +35,15 @@ export class PrinterUnavailableError extends Error {
 // Expo base config brings along. Metro provides the real one at runtime.
 declare const require: ((id: string) => unknown) | undefined;
 
+/** The sliver of the socket API this transport touches. */
+interface PrinterSocket {
+	write(data: Uint8Array | string, encoding?: unknown, callback?: (error?: unknown) => void): void;
+	on(event: 'error', listener: (error: unknown) => void): void;
+	destroy(): void;
+}
+
 interface TcpModule {
-	createConnection(options: { host: string; port: number }, callback?: () => void): Socket;
+	createConnection(options: { host: string; port: number }, callback?: () => void): PrinterSocket;
 }
 
 /** Lazy-load the TCP module; anything short of a working export is "unavailable". */
@@ -84,7 +89,7 @@ export function sendToPrinter(
 	}
 
 	return new Promise<void>((resolve, reject) => {
-		let socket: Socket | null = null;
+		let socket: PrinterSocket | null = null;
 		let settled = false;
 
 		const finish = (error?: Error) => {
@@ -113,7 +118,7 @@ export function sendToPrinter(
 			socket = tcp.createConnection({ host, port }, () => {
 				// Connected. The write callback fires once the bytes are flushed
 				// to the OS; only then is the socket safe to destroy.
-				(socket as Socket).write(bytes, undefined, (writeError) => {
+				(socket as PrinterSocket).write(bytes, undefined, (writeError) => {
 					if (writeError) {
 						finish(toError(writeError, `No se pudo enviar el ticket a ${host}:${port}.`));
 					} else {
