@@ -47,7 +47,7 @@ export async function submitOrder(lines: CartLine[], form: CheckoutForm): Promis
 
 	for (const line of lines) {
 		try {
-			await storeApi.addItem(line.productId, line.quantity);
+			await storeApi.addItem(line.productId, line.quantity, line.modifiers);
 		} catch (e) {
 			if (e instanceof ApiError) {
 				throw new ApiError(e.status, e.code, `${line.name}: ${e.message}`);

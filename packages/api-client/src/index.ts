@@ -7,6 +7,7 @@ export {
 	formatMinorUnits,
 	type StoreApiOptions,
 	type StoreProduct,
+	type CartItemData,
 	type StoreCategory,
 	type Cart,
 	type CartItem,

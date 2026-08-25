@@ -489,6 +489,44 @@ else
   fi
 fi
 
+# 19. Store API modifiers (customer-app path) — skipped when no product
+# carries modifier groups. The extensions envelope must validate, reprice,
+# label item_data, and produce distinct lines per selection.
+MODP=$(api "$BASE/wp-json/wc/store/v1/products?per_page=100" \
+  | $JQ -r '[.[] | select((.extensions.haramara.modifier_groups // []) | length > 0)][0]')
+if [ -z "$MODP" ] || [ "$MODP" = "null" ]; then
+  printf '\033[33mSKIP\033[0m store-api modifiers — no product carries groups\n'
+else
+  MPID=$(echo "$MODP" | $JQ -r '.id')
+  MGID=$(echo "$MODP" | $JQ -r '.extensions.haramara.modifier_groups[0].id')
+  MKEY=$(echo "$MODP" | $JQ -r '.extensions.haramara.modifier_groups[0].options | map(select(.price_delta != 0))[0].key // .extensions')
+  MDELTA=$(echo "$MODP" | $JQ -r '.extensions.haramara.modifier_groups[0].options | map(select(.price_delta != 0))[0].price_delta // 0')
+  if [ "$MKEY" = "null" ] || [ -z "$MKEY" ]; then
+    printf '\033[33mSKIP\033[0m store-api modifiers — no nonzero-delta option on product %s\n' "$MPID"
+  else
+    MH=$(mktemp)
+    api -D "$MH" "$BASE/wp-json/wc/store/v1/cart" >/dev/null
+    MCT=$(awk 'tolower($1) ~ /^cart-token:/ {print $2}' "$MH" | tr -d '\r')
+    MCART=$(api -X POST -H "Cart-Token: $MCT" -H 'Content-Type: application/json' \
+      -d "{\"id\": $MPID, \"quantity\": 1, \"extensions\": {\"haramara\": {\"modifiers\": [{\"group_id\": $MGID, \"option_keys\": [\"$MKEY\"]}]}}}" \
+      "$BASE/wp-json/wc/store/v1/cart/add-item")
+    echo "$MCART" | $JQ -e '.items[0].item_data | length > 0' >/dev/null \
+      || { echo "$MCART" | $JQ '.items[0].item_data? // .'; fail "store-api add carried no item_data"; }
+    MBASE=$(echo "$MODP" | $JQ -r '.prices.price')
+    MMU=$(echo "$MODP" | $JQ -r '.prices.currency_minor_unit')
+    MWANT=$(python3 -c "print(int($MBASE) + int(round(float($MDELTA) * (10 ** $MMU))))")
+    MGOT=$(echo "$MCART" | $JQ -r '.items[0].totals.line_total')
+    [ "$MGOT" = "$MWANT" ] || fail "store-api reprice: line_total $MGOT (want $MWANT)"
+    pass "store-api modifier add repriced ($MGOT minor units) with item_data"
+
+    api -X POST -H "Cart-Token: $MCT" -H 'Content-Type: application/json' \
+      -d "{\"id\": $MPID, \"quantity\": 1}" "$BASE/wp-json/wc/store/v1/cart/add-item" >/dev/null
+    MLINES=$(api -H "Cart-Token: $MCT" "$BASE/wp-json/wc/store/v1/cart" | $JQ -r '.items | length')
+    [ "$MLINES" = "2" ] || fail "distinct selections merged ($MLINES lines, want 2)"
+    pass "distinct selections -> distinct cart lines"
+  fi
+fi
+
 echo
 echo "All Phase A checks passed. Test orders left in DB: #$ORDER_ID (pickup), walk-in above."
 echo "Inventory checks left product $PID at stock 22 plus withdrawal log rows."

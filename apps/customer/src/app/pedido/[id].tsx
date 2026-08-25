@@ -138,9 +138,16 @@ export default function OrderScreen() {
 						<Text style={styles.sectionTitle}>Tu pedido</Text>
 						{data.items.map((item, i) => (
 							<View key={`${item.name}-${i}`} style={styles.itemRow}>
-								<Text style={styles.itemName}>
-									{item.quantity}× {item.name}
-								</Text>
+								<View style={styles.itemText}>
+									<Text style={styles.itemName}>
+										{item.quantity}× {item.name}
+									</Text>
+									{(item.modifiers?.length ?? 0) > 0 && (
+										<Text style={styles.itemMods} numberOfLines={2}>
+											{(item.modifiers ?? []).join(' · ')}
+										</Text>
+									)}
+								</View>
 								<Text style={styles.itemTotal}>{money(item.total)}</Text>
 							</View>
 						))}
@@ -245,6 +252,8 @@ const styles = StyleSheet.create({
 	sectionTitle: { color: color.text, fontSize: type.title, fontWeight: '600' },
 	itemRow: { flexDirection: 'row', justifyContent: 'space-between', gap: space(3) },
 	itemName: { color: color.text, fontSize: type.body, flexShrink: 1 },
+	itemText: { flex: 1, gap: 2 },
+	itemMods: { color: color.textSoft, fontSize: 12, lineHeight: 16 },
 	itemTotal: { color: color.textSoft, fontSize: type.body, fontVariant: ['tabular-nums'] },
 	totalRow: {
 		flexDirection: 'row',

@@ -60,8 +60,11 @@ final class Plugin {
 			Woo\Inventory::class,
 			Woo\ModifierFrontend::class,
 
-			// Catálogo: grupos de modificadores.
+			// Catálogo: grupos de modificadores. ModifierCart owns the
+			// source-agnostic cart lifecycle (classic + Store API);
+			// ModifierFrontend only renders the classic product-page fields.
 			Catalog\ModifierGroups::class,
+			Woo\ModifierCart::class,
 
 			// Reserve & pickup ordering.
 			Ordering\PickupScheduler::class,

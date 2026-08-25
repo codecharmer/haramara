@@ -1,4 +1,5 @@
 import { HttpConfig, request } from './http';
+import type { ModifierGroup, ModifierSelection } from './types';
 
 const NS = '/wp-json/wc/store/v1';
 
@@ -29,6 +30,10 @@ export interface StoreProduct {
 	low_stock_remaining: number | null;
 	images: StoreImage[];
 	categories: Array<{ id: number; name: string; slug: string }>;
+	/** Server-registered Store API extensions (Woo\ModifierCart). */
+	extensions?: {
+		haramara?: { modifier_groups: ModifierGroup[] };
+	};
 	prices: StorePrices;
 }
 
@@ -39,11 +44,26 @@ export interface StoreCategory {
 	count: number;
 }
 
+/**
+ * One visible metadata row on a cart line ("Leche: Avena (+$15.00)").
+ * WooCommerce emits `key` even though its schema documents `name` — read
+ * `key ?? name`.
+ */
+export interface CartItemData {
+	key?: string;
+	name?: string;
+	value: string;
+	display?: string;
+	hidden?: boolean;
+}
+
 export interface CartItem {
 	key: string;
 	id: number;
 	name: string;
 	quantity: number;
+	/** Visible modifier rows, populated by woocommerce_get_item_data. */
+	item_data?: CartItemData[];
 	images: StoreImage[];
 	prices: StorePrices;
 	totals: { line_total: string; currency_minor_unit: number; currency_code: string };
@@ -144,8 +164,20 @@ export class StoreApi {
 		return this.req<Cart>('/cart');
 	}
 
-	addItem(id: number, quantity: number): Promise<Cart> {
-		return this.req<Cart>('/cart/add-item', { method: 'POST', body: { id, quantity } });
+	/**
+	 * Add a line. `modifiers` ride the request's `extensions` envelope — the
+	 * server validates and re-prices them (Woo\ModifierCart); prices are never
+	 * client-asserted.
+	 */
+	addItem(id: number, quantity: number, modifiers?: ModifierSelection[]): Promise<Cart> {
+		return this.req<Cart>('/cart/add-item', {
+			method: 'POST',
+			body: {
+				id,
+				quantity,
+				...(modifiers && modifiers.length > 0 ? { extensions: { haramara: { modifiers } } } : {}),
+			},
+		});
 	}
 
 	updateItem(key: string, quantity: number): Promise<Cart> {
