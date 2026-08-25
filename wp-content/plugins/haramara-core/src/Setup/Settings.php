@@ -73,6 +73,7 @@ final class Settings implements Bootable {
 		$sms       = Options::group( Options::SMS );
 		$seo       = Options::group( Options::SEO );
 		$employees = Options::group( Options::EMPLOYEES );
+		$pos       = Options::group( Options::POS );
 
 		$tabs   = array(
 			'business'  => __( 'Negocio', 'haramara-core' ),
@@ -80,6 +81,7 @@ final class Settings implements Bootable {
 			'sms'       => __( 'SMS', 'haramara-core' ),
 			'seo'       => __( 'SEO', 'haramara-core' ),
 			'employees' => __( 'Empleados', 'haramara-core' ),
+			'pos'       => __( 'POS', 'haramara-core' ),
 		);
 		$active = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'business'; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- presentational tab.
 		if ( ! isset( $tabs[ $active ] ) ) {
@@ -118,6 +120,9 @@ final class Settings implements Bootable {
 				</div>
 				<div class="haramara-tab-panel" data-haramara-panel="employees" <?php echo 'employees' === $active ? '' : 'hidden'; ?>>
 					<?php $this->render_employees( $employees ); ?>
+				</div>
+				<div class="haramara-tab-panel" data-haramara-panel="pos" <?php echo 'pos' === $active ? '' : 'hidden'; ?>>
+					<?php $this->render_pos( $pos ); ?>
 				</div>
 
 				<?php submit_button( __( 'Guardar cambios', 'haramara-core' ) ); ?>
@@ -433,6 +438,39 @@ final class Settings implements Bootable {
 			)
 		);
 		exit;
+	}
+
+	/* === Tab: POS === */
+
+	/**
+	 * POS policy: discount threshold and the cuentas-abiertas flag.
+	 *
+	 * @param array<string,mixed> $v Stored POS option group.
+	 */
+	private function render_pos( array $v ): void {
+		$g = Options::POS;
+		echo '<table class="form-table" role="presentation"><tbody>';
+
+		echo '<tr><th scope="row">' . esc_html__( 'Descuento con supervisor', 'haramara-core' ) . '</th><td>';
+		printf(
+			'<input type="number" min="0" max="100" name="%s[discount_supervisor_pct]" value="%s" class="small-text"> %%',
+			esc_attr( $g ),
+			esc_attr( (string) (int) ( $v['discount_supervisor_pct'] ?? 15 ) )
+		);
+		echo '<p class="description">' . esc_html__( 'Un descuento mayor a este porcentaje de la cuenta pide el NIP de un supervisor en el POS.', 'haramara-core' ) . '</p>';
+		echo '</td></tr>';
+
+		echo '<tr><th scope="row">' . esc_html__( 'Cuentas abiertas', 'haramara-core' ) . '</th><td>';
+		printf(
+			'<label><input type="checkbox" name="%s[open_tabs]" value="1" %s> %s</label>',
+			esc_attr( $g ),
+			checked( ! empty( $v['open_tabs'] ), true, false ),
+			esc_html__( 'Permitir abrir cuentas (mesa/cliente), agregar rondas y cobrar después.', 'haramara-core' )
+		);
+		echo '<p class="description">' . esc_html__( 'El inventario se descuenta al servir; el ingreso se registra al cobrar. El corte no se puede cerrar con cuentas abiertas.', 'haramara-core' ) . '</p>';
+		echo '</td></tr>';
+
+		echo '</tbody></table>';
 	}
 
 	/* ---------------------------------------------------------------------- */

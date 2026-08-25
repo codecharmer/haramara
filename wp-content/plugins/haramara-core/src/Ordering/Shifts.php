@@ -132,10 +132,13 @@ final class Shifts {
 	 *
 	 * @param float               $declared_cash Counted physical drawer.
 	 * @param string              $note          Optional close note.
-	 * @param array<string,mixed> $operator      Who closed it.
+	 * @param array<string,mixed> $operator            Who closed it.
+	 * @param string              $tabs_authorization  Supervisor step-up bound to
+	 *                            `close_tabs`: force-voids any open cuentas so
+	 *                            the arqueo cannot close over live tickets.
 	 * @return array<string,mixed>|\WP_Error Serialized closed shift, variance included.
 	 */
-	public static function close( float $declared_cash, string $note, array $operator ) {
+	public static function close( float $declared_cash, string $note, array $operator, string $tabs_authorization = '' ) {
 		if ( $declared_cash < 0 || $declared_cash > self::MAX_AMOUNT ) {
 			return new \WP_Error(
 				'haramara_invalid_amount',
@@ -151,6 +154,35 @@ final class Shifts {
 				__( 'No hay un turno abierto.', 'haramara-core' ),
 				array( 'status' => 409 )
 			);
+		}
+
+		// A shift must never close over open cuentas — served product with no
+		// settled money would silently vanish from the arqueo. Either the
+		// cashier closes/voids them first, or a supervisor authorizes a
+		// force-void of everything still open.
+		$open_tabs = Tabs::enabled() ? Tabs::open_count() : 0;
+		if ( $open_tabs > 0 ) {
+			if ( '' === trim( $tabs_authorization ) ) {
+				return new \WP_Error(
+					'haramara_tabs_open',
+					sprintf(
+						/* translators: %d: open tab count. */
+						__( 'Hay %d cuenta(s) abierta(s). Ciérralas o pide a un supervisor autorizar su anulación.', 'haramara-core' ),
+						$open_tabs
+					),
+					array(
+						'status'    => 409,
+						'open_tabs' => $open_tabs,
+					)
+				);
+			}
+
+			$supervisor = \Haramara\Core\Staff\Operators::check_authorization( $tabs_authorization, 'close_tabs' );
+			if ( is_wp_error( $supervisor ) ) {
+				return $supervisor;
+			}
+
+			Tabs::void_all_open( $operator, (string) $supervisor['name'] );
 		}
 
 		$shift_id = (int) $row['id'];

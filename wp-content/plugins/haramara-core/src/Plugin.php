@@ -58,6 +58,7 @@ final class Plugin {
 			// WooCommerce foundation.
 			Woo\Support::class,
 			Woo\Inventory::class,
+			Woo\ModifierFrontend::class,
 
 			// Catálogo: grupos de modificadores.
 			Catalog\ModifierGroups::class,

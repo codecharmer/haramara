@@ -7,19 +7,25 @@ import type {
 	LoyaltyCard,
 	ModifierGroup,
 	ModifierGroupsResponse,
+	ModifierSelection,
 	Operator,
 	OperatorAuthorization,
 	OperatorSession,
 	OperatorsResponse,
+	PosConfig,
 	PosEvent,
 	Shift,
+	Tab,
 	ShiftResponse,
 	ShiftsResponse,
 	PosOrder,
 	PosProduct,
 	QueueResponse,
 	StaffTransition,
+	WalkInDiscount,
 	WalkInInput,
+	WalkInPayment,
+	WalkInTip,
 	Withdrawal,
 	WithdrawalInput,
 	WithdrawalsResponse,
@@ -188,6 +194,96 @@ export class PosApi {
 	}
 
 	/* ---------------------------------------------------------------------- */
+	/* Cuentas abiertas */
+	/* ---------------------------------------------------------------------- */
+
+	/** Feature flags + thresholds; read once at boot. */
+	posConfig(): Promise<PosConfig> {
+		return this.req<PosConfig>(`${NS}/pos/config`);
+	}
+
+	/** Open tabs, oldest first. 409 haramara_tabs_disabled when the flag is off. */
+	async tabs(): Promise<Tab[]> {
+		const res = await this.req<{ tabs: Tab[] }>(`${NS}/pos/tabs`);
+		return res.tabs;
+	}
+
+	async openTab(label: string, idempotencyKey?: string): Promise<Tab> {
+		const res = await this.req<{ tab: Tab }>(`${NS}/pos/tabs`, {
+			method: 'POST',
+			body: { label, ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}) },
+		});
+		return res.tab;
+	}
+
+	/** Add a round. Stock is taken here — a served latte is gone. Key it. */
+	async addTabLines(
+		tabId: number,
+		items: Array<{ product_id: number; quantity: number; modifiers?: ModifierSelection[] }>,
+		idempotencyKey?: string,
+	): Promise<Tab> {
+		const res = await this.req<{ tab: Tab }>(`${NS}/pos/tabs/${tabId}/lines`, {
+			method: 'POST',
+			body: { items, ...(idempotencyKey ? { idempotency_key: idempotencyKey } : {}) },
+		});
+		return res.tab;
+	}
+
+	/** Remove a served line: restores stock, writes a void ledger row against the tab. */
+	async removeTabLine(
+		tabId: number,
+		index: number,
+		reason: AdjustmentReason,
+		opts: { note?: string; idempotencyKey?: string } = {},
+	): Promise<Tab> {
+		const res = await this.req<{ tab: Tab }>(`${NS}/pos/tabs/${tabId}/remove-line`, {
+			method: 'POST',
+			body: {
+				index,
+				reason_code: reason,
+				reason_note: opts.note ?? '',
+				...(opts.idempotencyKey ? { idempotency_key: opts.idempotencyKey } : {}),
+			},
+		});
+		return res.tab;
+	}
+
+	/** Settle the cuenta into an order (re-priced at close; discount/tip policies apply). */
+	closeTab(
+		tabId: number,
+		payment: WalkInPayment,
+		opts: { tip?: WalkInTip; discount?: WalkInDiscount; cardReference?: string; idempotencyKey?: string } = {},
+	): Promise<PosOrder> {
+		return this.req<PosOrder>(`${NS}/pos/tabs/${tabId}/close`, {
+			method: 'POST',
+			body: {
+				payment,
+				tip: opts.tip,
+				discount: opts.discount,
+				card_reference: opts.cardReference,
+				...(opts.idempotencyKey ? { idempotency_key: opts.idempotencyKey } : {}),
+			},
+		});
+	}
+
+	/** Anular la cuenta completa: restores all stock, one ledger row. */
+	async voidTab(
+		tabId: number,
+		reason: AdjustmentReason,
+		opts: { note?: string; idempotencyKey?: string } = {},
+	): Promise<PosEvent> {
+		const res = await this.req<{ event: PosEvent }>(`${NS}/pos/tabs/${tabId}/void`, {
+			method: 'POST',
+			body: {
+				reason_code: reason,
+				reason_note: opts.note ?? '',
+				...(opts.idempotencyKey ? { idempotency_key: opts.idempotencyKey } : {}),
+			},
+		});
+		return res.event;
+	}
+
+	/* ---------------------------------------------------------------------- */
 	/* Cancelaciones y devoluciones */
 	/* ---------------------------------------------------------------------- */
 
@@ -284,6 +380,11 @@ export class PosApi {
 
 	summary(date?: string): Promise<DailySummary> {
 		return this.req<DailySummary>(`${NS}/pos/summary${date ? `?date=${date}` : ''}`);
+	}
+
+	/** Reportes por rango (inclusive). Supervisor session required — 403 otherwise. */
+	summaryRange(from: string, to: string): Promise<DailySummary> {
+		return this.req<DailySummary>(`${NS}/pos/summary?from=${from}&to=${to}`);
 	}
 
 	/** Resolved modifier groups for one product (no-store fallback to the feed's copy). */

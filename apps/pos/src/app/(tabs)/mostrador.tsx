@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import type { AdjustmentReason, TipMethod } from '@haramara/api-client';
+import type { AdjustmentReason, Tab, TipMethod } from '@haramara/api-client';
 import { needsAuthorization, ReasonSheet, REASON_LABELS, SupervisorSheet } from '../../lib/adjust';
 import { usePosApi } from '../../lib/auth';
 import { confirmDialog, notify } from '../../lib/dialog';
@@ -76,6 +76,29 @@ export default function MostradorScreen() {
 	/** Propina — rides as meta, shown separately, never inside the total. */
 	const [tipAmount, setTipAmount] = useState('');
 	const [tipMethod, setTipMethod] = useState<TipMethod | null>(null);
+	/** Terminal auth/reference on card sales (batch reconciliation). */
+	const [cardRef, setCardRef] = useState('');
+	/** Cuentas abiertas (feature-flagged server-side). */
+	const [activeTab, setActiveTab] = useState<Tab | null>(null);
+	const [tabLabel, setTabLabel] = useState('');
+	const [savingTab, setSavingTab] = useState(false);
+	const [removingIndex, setRemovingIndex] = useState<number | null>(null);
+	/** One key per round so a retried add cannot take stock twice. */
+	const [roundKey, setRoundKey] = useState(() => newIdempotencyKey());
+
+	const configQuery = useQuery({
+		queryKey: ['pos-config'],
+		queryFn: () => api.posConfig(),
+		staleTime: 300_000,
+	});
+	const openTabs = configQuery.data?.open_tabs === true;
+
+	const tabsQuery = useQuery({
+		queryKey: ['pos-tabs'],
+		queryFn: () => api.tabs(),
+		enabled: openTabs,
+		refetchInterval: 30_000,
+	});
 
 	const productsQuery = useQuery({
 		queryKey: ['pos-products'],
@@ -157,6 +180,75 @@ export default function MostradorScreen() {
 		setSheetProduct(null);
 	}
 
+	function ticketItems() {
+		return lines.map((l) => ({
+			product_id: l.product.id,
+			quantity: l.quantity,
+			modifiers: l.selections.length > 0 ? l.selections : undefined,
+		}));
+	}
+
+	function tabsSettled(tab?: Tab | null) {
+		setRoundKey(newIdempotencyKey());
+		if (tab !== undefined) setActiveTab(tab);
+		void queryClient.invalidateQueries({ queryKey: ['pos-tabs'] });
+		void queryClient.invalidateQueries({ queryKey: ['pos-products'] });
+	}
+
+	const saveTab = useMutation({
+		mutationFn: async () => {
+			const tab = await api.openTab(tabLabel.trim(), roundKey);
+			return api.addTabLines(tab.id, ticketItems(), `${roundKey}-l`);
+		},
+		onSuccess: (tab) => {
+			setTicket([]);
+			setTabLabel('');
+			setSavingTab(false);
+			notify('Cuenta guardada', `${tab.label} · ${money(tab.total)}`);
+			tabsSettled(null);
+		},
+		onError: (e) => notify('No se pudo guardar', e instanceof Error ? e.message : 'Intenta de nuevo.'),
+	});
+
+	const addRound = useMutation({
+		mutationFn: (tab: Tab) => api.addTabLines(tab.id, ticketItems(), roundKey),
+		onSuccess: (tab) => {
+			setTicket([]);
+			notify('Ronda agregada', `${tab.label} · ${money(tab.total)}`);
+			tabsSettled(tab);
+		},
+		onError: (e) => notify('No se pudo agregar', e instanceof Error ? e.message : 'Intenta de nuevo.'),
+	});
+
+	const removeLine = useMutation({
+		mutationFn: ({ tab, index, reason, reasonNote }: { tab: Tab; index: number; reason: AdjustmentReason; reasonNote: string }) =>
+			api.removeTabLine(tab.id, index, reason, { note: reasonNote, idempotencyKey: `${roundKey}-rm${index}` }),
+		onSuccess: (tab) => {
+			setRemovingIndex(null);
+			tabsSettled(tab);
+		},
+		onError: (e) => notify('No se pudo quitar', e instanceof Error ? e.message : 'Intenta de nuevo.'),
+	});
+
+	const settleTab = useMutation({
+		mutationFn: (tab: Tab) =>
+			api.closeTab(tab.id, payment, {
+				tip: tipValue > 0 ? { amount: tipValue, method: tipMethod ?? (payment === 'cash' ? 'cash' : 'card') } : undefined,
+				cardReference: payment === 'card_external' && cardRef.trim() !== '' ? cardRef.trim() : undefined,
+				idempotencyKey: saleKey,
+			}),
+		onSuccess: (order) => {
+			setTipAmount('');
+			setTipMethod(null);
+			setSaleKey(newIdempotencyKey());
+			notify('Cuenta cobrada', `Pedido #${order.number} · ${money(order.total)}`);
+			tabsSettled(null);
+			void queryClient.invalidateQueries({ queryKey: ['summary'] });
+			void queryClient.invalidateQueries({ queryKey: ['board'] });
+		},
+		onError: (e) => notify('No se pudo cobrar', e instanceof Error ? e.message : 'Intenta de nuevo.'),
+	});
+
 	const sale = useMutation({
 		mutationFn: () =>
 			api.createWalkIn({
@@ -180,6 +272,7 @@ export default function MostradorScreen() {
 					tipValue > 0
 						? { amount: tipValue, method: tipMethod ?? (payment === 'cash' ? 'cash' : 'card') }
 						: undefined,
+				card_reference: payment === 'card_external' && cardRef.trim() !== '' ? cardRef.trim() : undefined,
 			}),
 		onSuccess: (order) => {
 			setTicket([]);
@@ -189,6 +282,7 @@ export default function MostradorScreen() {
 			setAuthorization('');
 			setTipAmount('');
 			setTipMethod(null);
+			setCardRef('');
 			// Next customer, next ticket, next key.
 			setSaleKey(newIdempotencyKey());
 			notify('Venta registrada', `Pedido #${order.number} · ${money(order.total)}`);
@@ -292,6 +386,55 @@ export default function MostradorScreen() {
 
 	const ticketPane = (
 		<View style={[styles.ticket, twoPane ? styles.ticketSide : styles.ticketBottom]}>
+			{openTabs && (
+				<View style={styles.tabsStrip}>
+					{(tabsQuery.data ?? []).map((t) => (
+						<Pressable
+							key={t.id}
+							accessibilityRole="button"
+							onPress={() => setActiveTab(t)}
+							style={({ pressed }) => [styles.tabChip, pressed && { opacity: 0.8 }]}
+						>
+							<Text style={styles.tabChipText}>
+								{t.label} · {money(t.total)}
+							</Text>
+						</Pressable>
+					))}
+					{lines.length > 0 &&
+						(savingTab ? (
+							<View style={styles.tabSaveRow}>
+								<TextInput
+									style={styles.tabLabelInput}
+									value={tabLabel}
+									onChangeText={setTabLabel}
+									placeholder="Mesa / nombre"
+									placeholderTextColor={color.textSoft}
+									autoFocus
+									onSubmitEditing={() => tabLabel.trim() !== '' && saveTab.mutate()}
+								/>
+								<Pressable
+									accessibilityRole="button"
+									disabled={tabLabel.trim() === '' || saveTab.isPending}
+									onPress={() => saveTab.mutate()}
+									style={({ pressed }) => [styles.tabChip, pressed && { opacity: 0.8 }]}
+								>
+									<Text style={styles.tabChipText}>{saveTab.isPending ? '…' : 'Guardar'}</Text>
+								</Pressable>
+								<Pressable accessibilityRole="button" onPress={() => setSavingTab(false)}>
+									<Text style={styles.tabCancel}>×</Text>
+								</Pressable>
+							</View>
+						) : (
+							<Pressable
+								accessibilityRole="button"
+								onPress={() => setSavingTab(true)}
+								style={({ pressed }) => [styles.tabChip, styles.tabChipGhost, pressed && { opacity: 0.8 }]}
+							>
+								<Text style={styles.tabChipText}>+ Guardar cuenta</Text>
+							</Pressable>
+						))}
+				</View>
+			)}
 			<Text style={styles.ticketHeading}>Cuenta</Text>
 			{lines.length === 0 ? (
 				<Text style={styles.emptyText}>Toca un producto para agregarlo.</Text>
@@ -352,6 +495,17 @@ export default function MostradorScreen() {
 					onPress={() => setPayment('card_external')}
 				/>
 			</View>
+
+			{payment === 'card_external' && (
+				<TextInput
+					style={[styles.discountInput, { marginTop: space(2) }]}
+					value={cardRef}
+					onChangeText={setCardRef}
+					autoCapitalize="characters"
+					placeholder="Ref. de la terminal (opcional)"
+					placeholderTextColor={color.textSoft}
+				/>
+			)}
 
 			<View style={styles.discountRow}>
 				<TextInput
@@ -452,6 +606,80 @@ export default function MostradorScreen() {
 				</View>
 			)}
 			{modifierModal}
+			{activeTab !== null && (
+				<View style={styles.sheetOverlay}>
+					<View style={styles.sheetCard}>
+						<View style={styles.tabModalHead}>
+							<Text style={styles.sheetTitle}>{activeTab.label}</Text>
+							<Pressable accessibilityRole="button" onPress={() => setActiveTab(null)}>
+								<Text style={styles.tabCancel}>×</Text>
+							</Pressable>
+						</View>
+						<ScrollView style={{ maxHeight: 300 }}>
+							{activeTab.lines.map((l, i) => (
+								<View key={`${i}-${l.product_id}`} style={styles.tabLine}>
+									<View style={{ flex: 1 }}>
+										<Text style={styles.tabLineText}>
+											{l.quantity}× {l.name}
+										</Text>
+										{l.modifier_labels.length > 0 && (
+											<Text style={styles.tabLineMods}>{l.modifier_labels.join(' · ')}</Text>
+										)}
+									</View>
+									<Text style={styles.tabLineText}>
+										{money((l.unit_price + l.price_delta) * l.quantity)}
+									</Text>
+									<Pressable accessibilityRole="button" onPress={() => setRemovingIndex(i)}>
+										<Text style={styles.tabCancel}>−</Text>
+									</Pressable>
+								</View>
+							))}
+						</ScrollView>
+						<Text style={styles.tabTotal}>Total {money(activeTab.total)}</Text>
+						<View style={styles.tabActions}>
+							{lines.length > 0 && (
+								<Pressable
+									accessibilityRole="button"
+									disabled={addRound.isPending}
+									onPress={() => addRound.mutate(activeTab)}
+									style={({ pressed }) => [styles.discountApply, pressed && { opacity: 0.8 }]}
+								>
+									<Text style={styles.discountApplyText}>Agregar cuenta actual</Text>
+								</Pressable>
+							)}
+							<Pressable
+								accessibilityRole="button"
+								disabled={settleTab.isPending || activeTab.lines.length === 0}
+								onPress={() =>
+									confirmDialog({
+										title: `Cobrar ${activeTab.label}`,
+										message:
+											payment === 'cash' ? 'Pago en efectivo (se cobra al precio actual).' : 'Pago con tarjeta en la terminal externa.',
+										confirmText: 'Cobrar',
+										onConfirm: () => settleTab.mutate(activeTab),
+									})
+								}
+								style={({ pressed }) => [styles.primaryAction, pressed && { opacity: 0.85 }]}
+							>
+								<Text style={styles.primaryActionText}>
+									{settleTab.isPending ? '…' : `Cobrar (${payment === 'cash' ? 'efectivo' : 'tarjeta'})`}
+								</Text>
+							</Pressable>
+						</View>
+					</View>
+				</View>
+			)}
+			{removingIndex !== null && activeTab !== null && (
+				<ReasonSheet
+					title={`Quitar ${activeTab.lines[removingIndex]?.name ?? 'línea'}`}
+					flow="void"
+					busy={removeLine.isPending}
+					onConfirm={(reason, reasonNote) =>
+						removeLine.mutate({ tab: activeTab, index: removingIndex, reason, reasonNote })
+					}
+					onCancel={() => setRemovingIndex(null)}
+				/>
+			)}
 			{discountSheet && (
 				<ReasonSheet
 					title={`Descuento de ${money(Number.parseFloat(discountAmount.replace(/[^0-9.]/g, '')) || 0)}`}
@@ -625,6 +853,44 @@ const styles = StyleSheet.create({
 	},
 	tipChipActive: { borderColor: color.accentDeep, backgroundColor: color.attentionBg },
 	tipChipText: { color: color.text, fontSize: type.tiny, fontWeight: '700' },
+	tabsStrip: { flexDirection: 'row', flexWrap: 'wrap', gap: space(2), marginBottom: space(2), alignItems: 'center' },
+	tabChip: {
+		borderWidth: 1,
+		borderColor: color.accentDeep,
+		borderRadius: radius.pill,
+		paddingHorizontal: space(3),
+		paddingVertical: space(1.5),
+		backgroundColor: color.attentionBg,
+	},
+	tabChipGhost: { borderStyle: 'dashed', backgroundColor: color.bg, borderColor: color.hairline },
+	tabChipText: { color: color.accentDeep, fontSize: type.tiny, fontWeight: '700' },
+	tabSaveRow: { flexDirection: 'row', alignItems: 'center', gap: space(2), flexGrow: 1 },
+	tabLabelInput: {
+		flexGrow: 1,
+		minWidth: 110,
+		borderWidth: 1,
+		borderColor: color.hairline,
+		borderRadius: radius.control,
+		backgroundColor: color.bg,
+		paddingHorizontal: space(2.5),
+		paddingVertical: space(1.5),
+		fontSize: type.small,
+		color: color.text,
+	},
+	tabCancel: { color: color.textSoft, fontSize: type.title, fontWeight: '700', paddingHorizontal: space(2) },
+	tabModalHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+	tabLine: { flexDirection: 'row', alignItems: 'center', gap: space(2), paddingVertical: space(1.5), borderBottomWidth: 1, borderBottomColor: color.hairline },
+	tabLineText: { color: color.text, fontSize: type.small, fontWeight: '600' },
+	tabLineMods: { color: color.textSoft, fontSize: type.tiny },
+	tabTotal: { color: color.text, fontSize: type.title, fontWeight: '700', textAlign: 'right' },
+	tabActions: { flexDirection: 'row', alignItems: 'center', gap: space(3), flexWrap: 'wrap', justifyContent: 'flex-end' },
+	primaryAction: {
+		backgroundColor: color.text,
+		borderRadius: radius.control,
+		paddingHorizontal: space(4),
+		paddingVertical: space(2.5),
+	},
+	primaryActionText: { color: color.surface, fontSize: type.small, fontWeight: '700' },
 	stepper: { flexDirection: 'row', alignItems: 'center', gap: space(1) },
 	step: {
 		width: 32,

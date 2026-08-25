@@ -27,6 +27,7 @@ use Haramara\Core\Ordering\Adjustments;
 use Haramara\Core\Ordering\PosEvents;
 use Haramara\Core\Ordering\Shifts;
 use Haramara\Core\Ordering\StatusTransitions;
+use Haramara\Core\Ordering\Tabs;
 use Haramara\Core\Ordering\WalkInOrders;
 use Haramara\Core\Push\StaffTokens;
 use Haramara\Core\Setup\Activator;
@@ -161,6 +162,13 @@ final class PosRoutes implements Bootable {
 						'type'        => 'object',
 						'description' => __( 'Propina: {amount, method: cash|card}. Nunca cuenta como ingreso.', 'haramara-core' ),
 					),
+					'card_reference'  => array(
+						'required'          => false,
+						'type'              => 'string',
+						'default'           => '',
+						'description'       => __( 'Referencia/autorización de la terminal externa (para conciliar el corte de la terminal).', 'haramara-core' ),
+						'sanitize_callback' => static fn( $value ): string => sanitize_text_field( (string) $value ),
+					),
 				),
 			)
 		);
@@ -172,7 +180,14 @@ final class PosRoutes implements Bootable {
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_summary' ),
 				'permission_callback' => array( $this, 'permission' ),
-				'args'                => array( 'date' => $date_arg ),
+				'args'                => array(
+					'date' => $date_arg,
+					// Range mode (reportes por rango): from+to together. The
+					// range view is an owner/supervisor surface — it bypasses
+					// the day framing, so it is supervisor-gated outright.
+					'from' => $date_arg,
+					'to'   => $date_arg,
+				),
 			)
 		);
 
@@ -398,9 +413,16 @@ final class PosRoutes implements Bootable {
 				'callback'            => array( $this, 'close_shift' ),
 				'permission_callback' => array( $this, 'permission' ),
 				'args'                => array(
-					'declared_cash'   => $amount_arg( __( 'Efectivo contado al cierre (conteo ciego).', 'haramara-core' ) ),
-					'note'            => $note_arg,
-					'idempotency_key' => $idempotency_arg,
+					'declared_cash'      => $amount_arg( __( 'Efectivo contado al cierre (conteo ciego).', 'haramara-core' ) ),
+					'note'               => $note_arg,
+					'tabs_authorization' => array(
+						'required'          => false,
+						'type'              => 'string',
+						'default'           => '',
+						'description'       => __( 'Autorización de supervisor para anular cuentas abiertas al cierre.', 'haramara-core' ),
+						'sanitize_callback' => static fn( $value ): string => sanitize_text_field( (string) $value ),
+					),
+					'idempotency_key'    => $idempotency_arg,
 				),
 			)
 		);
@@ -417,6 +439,127 @@ final class PosRoutes implements Bootable {
 					'note'            => $note_arg,
 					'idempotency_key' => $idempotency_arg,
 				),
+			)
+		);
+
+		// POS policy the app reads at boot (feature flags + thresholds).
+		register_rest_route(
+			self::NS,
+			'/pos/config',
+			array(
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_pos_config' ),
+				'permission_callback' => array( $this, 'permission' ),
+			)
+		);
+
+		// Cuentas abiertas. Everything below answers 409 haramara_tabs_disabled
+		// while the Options::POS flag is off — the surface ships dark.
+		register_rest_route(
+			self::NS,
+			'/pos/tabs',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_tabs' ),
+					'permission_callback' => array( $this, 'permission' ),
+				),
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'open_tab' ),
+					'permission_callback' => array( $this, 'permission' ),
+					'args'                => array(
+						'label'           => array(
+							'required'          => true,
+							'type'              => 'string',
+							'sanitize_callback' => static fn( $value ): string => sanitize_text_field( (string) $value ),
+						),
+						'idempotency_key' => $idempotency_arg,
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NS,
+			'/pos/tabs/(?P<id>\d+)/lines',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'add_tab_lines' ),
+				'permission_callback' => array( $this, 'permission' ),
+				'args'                => array(
+					'items'           => array(
+						'required'    => true,
+						'type'        => 'array',
+						'description' => __( 'Ronda: [{product_id, quantity, modifiers?}].', 'haramara-core' ),
+					),
+					'idempotency_key' => $idempotency_arg,
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NS,
+			'/pos/tabs/(?P<id>\d+)/remove-line',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'remove_tab_line' ),
+				'permission_callback' => array( $this, 'permission' ),
+				'args'                => array_merge(
+					$reason_args,
+					array(
+						'index'           => array(
+							'required'          => true,
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+						),
+						'idempotency_key' => $idempotency_arg,
+					)
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NS,
+			'/pos/tabs/(?P<id>\d+)/close',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'close_tab' ),
+				'permission_callback' => array( $this, 'permission' ),
+				'args'                => array(
+					'payment'         => array(
+						'required'          => true,
+						'type'              => 'string',
+						'enum'              => array( 'cash', 'card_external', 'card-external' ),
+						'sanitize_callback' => static fn( $value ): string => sanitize_text_field( (string) $value ),
+					),
+					'discount'        => array(
+						'required' => false,
+						'type'     => 'object',
+					),
+					'tip'             => array(
+						'required' => false,
+						'type'     => 'object',
+					),
+					'card_reference'  => array(
+						'required'          => false,
+						'type'              => 'string',
+						'default'           => '',
+						'sanitize_callback' => static fn( $value ): string => sanitize_text_field( (string) $value ),
+					),
+					'idempotency_key' => $idempotency_arg,
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NS,
+			'/pos/tabs/(?P<id>\d+)/void',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'void_tab' ),
+				'permission_callback' => array( $this, 'permission' ),
+				'args'                => array_merge( $reason_args, array( 'idempotency_key' => $idempotency_arg ) ),
 			)
 		);
 
@@ -592,6 +735,196 @@ final class PosRoutes implements Bootable {
 		);
 	}
 
+	/* === Cuentas abiertas === */
+
+	/**
+	 * GET /haramara/v1/pos/config — feature flags + thresholds the app reads at boot.
+	 */
+	public function get_pos_config(): \WP_REST_Response {
+		$pos = Options::pos();
+
+		$response = rest_ensure_response(
+			array(
+				'open_tabs'               => (bool) ( $pos['open_tabs'] ?? false ),
+				'discount_supervisor_pct' => (int) ( $pos['discount_supervisor_pct'] ?? 15 ),
+			)
+		);
+		$response->header( 'Cache-Control', 'no-store' );
+
+		return $response;
+	}
+
+	/**
+	 * GET /haramara/v1/pos/tabs — open tabs, oldest first.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function get_tabs() {
+		if ( ! Tabs::enabled() ) {
+			return new \WP_Error( 'haramara_tabs_disabled', __( 'Las cuentas abiertas no están habilitadas.', 'haramara-core' ), array( 'status' => 409 ) );
+		}
+
+		$response = rest_ensure_response( array( 'tabs' => Tabs::open_tabs() ) );
+		$response->header( 'Cache-Control', 'no-store' );
+
+		return $response;
+	}
+
+	/**
+	 * POST /haramara/v1/pos/tabs — open a cuenta.
+	 *
+	 * @param \WP_REST_Request $request Current request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function open_tab( \WP_REST_Request $request ) {
+		return $this->guarded(
+			$request,
+			'pos/tabs/open',
+			function ( $operator ) use ( $request ) {
+				$tab = Tabs::open(
+					(string) $request->get_param( 'label' ),
+					is_array( $operator ) ? Operators::public_shape( $operator ) : array()
+				);
+				return $this->tab_response( $tab, 201 );
+			}
+		);
+	}
+
+	/**
+	 * POST /haramara/v1/pos/tabs/{id}/lines — add a round.
+	 *
+	 * @param \WP_REST_Request $request Current request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function add_tab_lines( \WP_REST_Request $request ) {
+		return $this->guarded(
+			$request,
+			'pos/tabs/lines',
+			function ( $operator ) use ( $request ) {
+				$raw   = (array) $request->get_param( 'items' );
+				$items = array();
+				foreach ( $raw as $line ) {
+					$line    = (array) $line;
+					$items[] = array(
+						'product_id' => absint( $line['product_id'] ?? 0 ),
+						'quantity'   => absint( $line['quantity'] ?? 0 ),
+						'modifiers'  => array_values( (array) ( $line['modifiers'] ?? array() ) ),
+					);
+				}
+
+				$tab = Tabs::add_lines(
+					(int) $request->get_param( 'id' ),
+					$items,
+					is_array( $operator ) ? Operators::public_shape( $operator ) : array()
+				);
+				return $this->tab_response( $tab, 200 );
+			}
+		);
+	}
+
+	/**
+	 * POST /haramara/v1/pos/tabs/{id}/remove-line — void one served line.
+	 *
+	 * @param \WP_REST_Request $request Current request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function remove_tab_line( \WP_REST_Request $request ) {
+		return $this->guarded(
+			$request,
+			'pos/tabs/remove-line',
+			function ( $operator ) use ( $request ) {
+				$tab = Tabs::remove_line(
+					(int) $request->get_param( 'id' ),
+					(int) $request->get_param( 'index' ),
+					(string) $request->get_param( 'reason_code' ),
+					(string) $request->get_param( 'reason_note' ),
+					is_array( $operator ) ? Operators::public_shape( $operator ) : array()
+				);
+				return $this->tab_response( $tab, 200 );
+			}
+		);
+	}
+
+	/**
+	 * POST /haramara/v1/pos/tabs/{id}/close — settle the cuenta into an order.
+	 *
+	 * @param \WP_REST_Request $request Current request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function close_tab( \WP_REST_Request $request ) {
+		return $this->guarded(
+			$request,
+			'pos/tabs/close',
+			function ( $operator ) use ( $request ) {
+				$order = Tabs::close(
+					(int) $request->get_param( 'id' ),
+					(string) $request->get_param( 'payment' ),
+					is_array( $operator ) ? Operators::public_shape( $operator ) : array(),
+					(array) $request->get_param( 'discount' ),
+					(array) $request->get_param( 'tip' ),
+					(string) $request->get_param( 'card_reference' )
+				);
+				if ( is_wp_error( $order ) ) {
+					return $order;
+				}
+
+				$response = rest_ensure_response( OrderBoard::serialize_order( $order ) );
+				$response->set_status( 201 );
+				$response->header( 'Cache-Control', 'no-store' );
+
+				return $response;
+			}
+		);
+	}
+
+	/**
+	 * POST /haramara/v1/pos/tabs/{id}/void — anular la cuenta completa.
+	 *
+	 * @param \WP_REST_Request $request Current request.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	public function void_tab( \WP_REST_Request $request ) {
+		return $this->guarded(
+			$request,
+			'pos/tabs/void',
+			function ( $operator ) use ( $request ) {
+				$event = Tabs::void_tab(
+					(int) $request->get_param( 'id' ),
+					(string) $request->get_param( 'reason_code' ),
+					(string) $request->get_param( 'reason_note' ),
+					is_array( $operator ) ? Operators::public_shape( $operator ) : array()
+				);
+				if ( is_wp_error( $event ) ) {
+					return $event;
+				}
+
+				$response = rest_ensure_response( array( 'event' => $event ) );
+				$response->set_status( 201 );
+				$response->header( 'Cache-Control', 'no-store' );
+
+				return $response;
+			}
+		);
+	}
+
+	/**
+	 * Shared tab result → response.
+	 *
+	 * @param array<string,mixed>|\WP_Error $tab    Tab result.
+	 * @param int                           $status HTTP status on success.
+	 * @return \WP_REST_Response|\WP_Error
+	 */
+	private function tab_response( $tab, int $status ) {
+		if ( is_wp_error( $tab ) ) {
+			return $tab;
+		}
+
+		$response = rest_ensure_response( array( 'tab' => $tab ) );
+		$response->set_status( $status );
+		$response->header( 'Cache-Control', 'no-store' );
+
+		return $response;
+	}
+
 	/* === Turno de caja === */
 
 	/**
@@ -662,7 +995,8 @@ final class PosRoutes implements Bootable {
 				$shift = Shifts::close(
 					(float) $request->get_param( 'declared_cash' ),
 					(string) $request->get_param( 'note' ),
-					is_array( $operator ) ? Operators::public_shape( $operator ) : array()
+					is_array( $operator ) ? Operators::public_shape( $operator ) : array(),
+					(string) $request->get_param( 'tabs_authorization' )
 				);
 				if ( is_wp_error( $shift ) ) {
 					return $shift;
@@ -916,7 +1250,9 @@ final class PosRoutes implements Bootable {
 					(string) $request->get_param( 'note' ),
 					is_array( $operator ) ? Operators::public_shape( $operator ) : array(),
 					(array) $request->get_param( 'discount' ),
-					(array) $request->get_param( 'tip' )
+					(array) $request->get_param( 'tip' ),
+					array(),
+					(string) $request->get_param( 'card_reference' )
 				);
 				if ( is_wp_error( $order ) ) {
 					return $order;
@@ -942,12 +1278,35 @@ final class PosRoutes implements Bootable {
 			return $this->wc_unavailable();
 		}
 
-		$date   = $this->requested_date( $request );
+		$date = $this->requested_date( $request );
+
+		// Range mode: from+to flips this from the counter's day view into an
+		// owner report (comparativos, mix por rango). Cross-day cash pictures
+		// are exactly what the blind count hides, so ranges are supervisor-only
+		// regardless of shift state.
+		$from  = (string) $request->get_param( 'from' );
+		$to    = (string) $request->get_param( 'to' );
+		$range = '' !== $from && '' !== $to;
+
+		if ( $range ) {
+			if ( $to < $from ) {
+				list( $from, $to ) = array( $to, $from );
+			}
+			$operator = $this->resolve_operator_quietly( $request );
+			if ( ! is_array( $operator ) || ! Operators::is_supervisor( $operator ) ) {
+				return new \WP_Error(
+					'haramara_supervisor_required',
+					__( 'Los reportes por rango necesitan una sesión de supervisor.', 'haramara-core' ),
+					array( 'status' => 403 )
+				);
+			}
+		}
+
 		$orders = wc_get_orders(
 			array(
 				'limit'        => -1,
 				'status'       => Reports::PAID_STATUSES,
-				'date_created' => OrderBoard::day_range( $date ),
+				'date_created' => $range ? OrderBoard::span_range( $from, $to ) : OrderBoard::day_range( $date ),
 			)
 		);
 		$orders = is_array( $orders ) ? $orders : array();
@@ -1007,7 +1366,9 @@ final class PosRoutes implements Bootable {
 		}
 
 		$payload = array(
-			'date'              => $date,
+			'date'              => $range ? $from : $date,
+			'from'              => $range ? $from : null,
+			'to'                => $range ? $to : null,
 			'orders_total'      => $count,
 			'revenue'           => round( $revenue, 2 ),
 			'currency'          => function_exists( 'get_woocommerce_currency' ) ? get_woocommerce_currency() : 'MXN',
@@ -1016,11 +1377,12 @@ final class PosRoutes implements Bootable {
 			'by_payment_method' => $by_payment,
 			'top_items'         => $top,
 			// Salidas internas: valued at price snapshots, never revenue.
-			'withdrawals'       => Withdrawals::summary_for_date( $date ),
+			// (Day view only — the range report is order-derived.)
+			'withdrawals'       => $range ? null : Withdrawals::summary_for_date( $date ),
 			// Cancelaciones/devoluciones/descuentos/cortesías — explicit
 			// buckets with count + value + operator; never netted silently
 			// into revenue.
-			'adjustments'       => PosEvents::summary_for_date( $date ),
+			'adjustments'       => $range ? null : PosEvents::summary_for_date( $date ),
 			// Propinas: excluded from revenue by construction (meta-only);
 			// cash tips are part of expected drawer cash, so the block is
 			// redacted with the rest of the cash picture while a shift is open.
@@ -1039,7 +1401,7 @@ final class PosRoutes implements Bootable {
 		// revenue included, since revenue − card = cash. Card buckets and
 		// order counts stay visible. Everything reappears the moment the
 		// shift closes; a café that never opens shifts never sees redaction.
-		if ( null !== Shifts::current() ) {
+		if ( ! $range && null !== Shifts::current() ) {
 			$operator      = $this->resolve_operator_quietly( $request );
 			$is_supervisor = is_array( $operator ) && Operators::is_supervisor( $operator );
 

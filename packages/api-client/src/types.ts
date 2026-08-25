@@ -27,6 +27,8 @@ export interface PosOrder {
 	number: string;
 	/** Printable ticket folio (`F4M-443F`); the /factura handle. Absent pre-Phase-2. */
 	folio?: string;
+	/** External-terminal auth/reference for card sales (batch reconciliation). */
+	card_reference?: string;
 	/** Propina in MXN. Meta-only — never part of `total`. 0 when none. */
 	tip?: number;
 	/** '' when no tip. */
@@ -127,6 +129,9 @@ export interface RevenueBucket {
 
 export interface DailySummary {
 	date: string;
+	/** Present in range mode (reportes por rango, supervisor-only). */
+	from?: string | null;
+	to?: string | null;
 	orders_total: number;
 	/**
 	 * Absent while a shift is open and the requester is not a supervisor —
@@ -146,6 +151,47 @@ export interface DailySummary {
 	adjustments?: AdjustmentsSummary;
 	/** Propinas — excluded from revenue by construction; absent while redacted. */
 	tips?: TipsSummary;
+}
+
+/* -------------------------------------------------------------------------- */
+/* Cuentas abiertas (Ordering\Tabs) — feature-flagged, haramara-first          */
+/* -------------------------------------------------------------------------- */
+
+/** POS policy the app reads at boot (GET /pos/config). */
+export interface PosConfig {
+	open_tabs: boolean;
+	discount_supervisor_pct: number;
+}
+
+/** One served line on an open tab. Prices are display snapshots; close re-prices. */
+export interface TabLine {
+	product_id: number;
+	name: string;
+	quantity: number;
+	unit_price: number;
+	price_delta: number;
+	modifiers: ModifierSelection[];
+	modifier_labels: string[];
+	served_at: string;
+	served_by: string;
+}
+
+/**
+ * A cuenta abierta: stock left the bar at serve-time, revenue exists only
+ * when it closes into a WooCommerce order. The shift close refuses to close
+ * over open tabs.
+ */
+export interface Tab {
+	id: number;
+	status: 'open' | 'closed' | 'void';
+	label: string;
+	opened_at: string;
+	opened_by: string;
+	shift_id: number;
+	lines: TabLine[];
+	/** Snapshot total for display; the charge is re-priced at close. */
+	total: number;
+	closed_order_id: number | null;
 }
 
 /** The day's propinas, per method and per employee. */
@@ -195,6 +241,8 @@ export interface WalkInInput {
 	note?: string;
 	discount?: WalkInDiscount;
 	tip?: WalkInTip;
+	/** Terminal auth/reference typed by the cashier on card sales. */
+	card_reference?: string;
 	/**
 	 * Client-generated key that makes a retried charge settle once. Omit and
 	 * PosApi mints one; pass your own to retry the *same* logical sale after a

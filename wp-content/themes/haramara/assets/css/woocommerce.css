@@ -245,6 +245,64 @@
 	font-size: var(--wp--preset--font-size--sm);
 }
 
+/* Modifier groups (haramara-core Woo\ModifierFrontend) — hairline-ruled
+ * fieldsets above the add-to-cart button, drawn, never boxed. */
+.hm-modifiers {
+	display: grid;
+	gap: var(--wp--preset--spacing--md);
+	margin: var(--wp--preset--spacing--md) 0;
+}
+
+.hm-modifiers__group {
+	margin: 0;
+	padding: var(--wp--preset--spacing--sm) 0 0;
+	border: 0;
+	border-top: 1px solid var(--wp--custom--hairline);
+}
+
+.hm-modifiers__legend {
+	padding: 0;
+	font-size: var(--wp--preset--font-size--sm);
+	font-weight: 500;
+	letter-spacing: 0.18em;
+	text-transform: uppercase;
+	color: var(--wp--preset--color--smoke);
+}
+
+.hm-modifiers__req {
+	color: var(--wp--preset--color--brass);
+	letter-spacing: 0.14em;
+}
+
+.hm-modifiers__option {
+	display: flex;
+	align-items: baseline;
+	gap: 0.6rem;
+	padding: 0.35rem 0;
+	color: var(--wp--preset--color--limestone);
+	cursor: pointer;
+}
+
+.hm-modifiers__option input {
+	accent-color: var(--wp--preset--color--brass);
+	inline-size: 1rem;
+	block-size: 1rem;
+	flex: none;
+	align-self: center;
+	margin: 0;
+}
+
+.hm-modifiers__name {
+	font-weight: 460;
+	color: var(--wp--preset--color--bone);
+}
+
+.hm-modifiers__delta {
+	color: var(--wp--preset--color--smoke);
+	font-size: var(--wp--preset--font-size--sm);
+	font-variant-numeric: tabular-nums;
+}
+
 /* -------------------------------------------------------------------------
  * 5. Cart & checkout
  * ---------------------------------------------------------------------- */
