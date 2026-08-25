@@ -33,6 +33,9 @@ final class Activator {
 	/** Append-only POS audit-event ledger basename (prefix added at runtime). Mirrored by Ordering\PosEvents. */
 	public const EVENTS_TABLE = 'haramara_pos_events';
 
+	/** Open tabs (cuentas abiertas) basename (prefix added at runtime). Mirrored by Ordering\Tabs. */
+	public const TABS_TABLE = 'haramara_pos_tabs';
+
 	/**
 	 * Schema generation. Bump when create_tables() changes so maybe_upgrade()
 	 * re-runs dbDelta on already-active installs (deploys never fire the
@@ -43,9 +46,10 @@ final class Activator {
 	 * version 5 adds the cash-shift (turno) table and the append-only POS
 	 * event ledger (created together: cash drops are events that the shift's
 	 * expected-cash math subtracts, so the two tables are one feature);
-	 * version 6 adds the CFDI invoices table (Fiscal\Invoices owns its schema).
+	 * version 6 adds the CFDI invoices table (Fiscal\Invoices owns its schema);
+	 * version 7 adds the open-tabs (cuentas abiertas) table.
 	 */
-	public const DB_VERSION = 6;
+	public const DB_VERSION = 7;
 
 	/** Option that records the schema generation currently installed. */
 	private const DB_VERSION_OPTION = 'haramara_db_version';
@@ -285,6 +289,32 @@ final class Activator {
 		// CFDI invoices (autofactura): schema lives with its owner so the
 		// fiscal domain stays self-contained; the Activator only executes it.
 		dbDelta( \Haramara\Core\Fiscal\Invoices::schema( $wpdb->prefix, $charset_collate ) );
+
+		// Open tabs (cuentas abiertas): a parked ticket between armar and
+		// liquidar. Stock is taken at add-time (a served latte is gone), the
+		// WooCommerce order — and therefore revenue — exists only at close.
+		// items_json snapshots lines incl. validated modifier selections.
+		// Feature-flagged (Options::POS open_tabs); the table ships everywhere,
+		// dark where the flag is off. Used by Ordering\Tabs.
+		$tabs = $wpdb->prefix . self::TABS_TABLE;
+
+		$sql = "CREATE TABLE {$tabs} (
+			id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+			status VARCHAR(10) NOT NULL DEFAULT 'open',
+			label VARCHAR(80) NOT NULL DEFAULT '',
+			opened_at DATETIME NOT NULL,
+			shift_id BIGINT UNSIGNED NOT NULL DEFAULT 0,
+			operator_key VARCHAR(32) NOT NULL DEFAULT '',
+			operator_name VARCHAR(80) NOT NULL DEFAULT '',
+			items_json LONGTEXT NULL,
+			closed_order_id BIGINT UNSIGNED NULL DEFAULT NULL,
+			closed_at DATETIME NULL DEFAULT NULL,
+			PRIMARY KEY  (id),
+			KEY status (status),
+			KEY opened_at (opened_at)
+		) {$charset_collate};";
+
+		dbDelta( $sql );
 	}
 
 	/**

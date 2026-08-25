@@ -139,6 +139,10 @@ final class Options implements Bootable {
 				// A sale-time discount above this % of the subtotal needs a
 				// supervisor authorization.
 				'discount_supervisor_pct' => 15,
+				// Cuentas abiertas (open a ticket, add rounds, close later).
+				// Ships OFF everywhere; the owner flips it where table service
+				// is real. The shift close refuses to close over open tabs.
+				'open_tabs'               => false,
 			),
 		);
 	}
@@ -415,6 +419,7 @@ final class Options implements Bootable {
 		$value = is_array( $value ) ? $value : array();
 		return array(
 			'discount_supervisor_pct' => max( 0, min( 100, (int) ( $value['discount_supervisor_pct'] ?? 15 ) ) ),
+			'open_tabs'               => ! empty( $value['open_tabs'] ),
 		);
 	}
 

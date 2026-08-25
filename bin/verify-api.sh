@@ -33,6 +33,10 @@
 #      authorization rings \$0 and lands in the adjustments buckets
 #  17. propinas: a cash tip never touches revenue or the order total, but DOES
 #      raise the blind close's expected cash; card tips touch neither
+#  18. cuentas abiertas (skipped when the open_tabs flag is off): stock moves
+#      at serve-time, removing a line restocks + writes a tab_id ledger row,
+#      the shift refuses to close over an open tab, and settling the tab
+#      creates the order WITHOUT double-decrementing stock
 set -euo pipefail
 
 BASE="${BASE:-http://localhost:8892}"
@@ -428,6 +432,60 @@ else
       | $JQ -r '.tips.total // empty')
     [ -n "$TIPS" ] || fail "tips block missing from summary after close"
     pass "tips visible after close (total \$$TIPS today)"
+
+    # 18. Cuentas abiertas — a second, self-contained shift.
+    TABS_ON=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/config" | $JQ -r '.open_tabs // false')
+    if [ "$TABS_ON" != "true" ]; then
+      printf '\033[33mSKIP\033[0m cuentas abiertas — open_tabs flag off\n'
+    else
+      TBK="verify-tab-$(date +%s)-$RANDOM"
+      api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+        -d "{\"opening_float\": 600, \"idempotency_key\": \"$TBK-shift\"}" "$BASE/wp-json/haramara/v1/pos/shift/open" >/dev/null
+
+      TABID=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+        -d "{\"label\": \"Mesa verify\", \"idempotency_key\": \"$TBK-open\"}" "$BASE/wp-json/haramara/v1/pos/tabs" | $JQ -r '.tab.id')
+      [ -n "$TABID" ] && [ "$TABID" != "null" ] || fail "tab open failed"
+
+      S0=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/products" | $JQ -r "[.products[] | select(.id == $PID)][0].stock_quantity")
+      api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+        -d "{\"items\":[{\"product_id\": $PID, \"quantity\": 2}],\"idempotency_key\":\"$TBK-r1\"}" \
+        "$BASE/wp-json/haramara/v1/pos/tabs/$TABID/lines" >/dev/null
+      S1=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/products" | $JQ -r "[.products[] | select(.id == $PID)][0].stock_quantity")
+      [ "$S1" = "$(( S0 - 2 ))" ] || fail "serve-time stock: $S0 -> $S1 (want -2)"
+      pass "tab round took stock at serve-time ($S0 -> $S1)"
+
+      api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+        -d "{\"index\": 0, \"reason_code\": \"error_captura\", \"idempotency_key\": \"$TBK-rm\"}" \
+        "$BASE/wp-json/haramara/v1/pos/tabs/$TABID/remove-line" >/dev/null
+      S2=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/products" | $JQ -r "[.products[] | select(.id == $PID)][0].stock_quantity")
+      [ "$S2" = "$S0" ] || fail "remove-line restock: $S1 -> $S2 (want $S0)"
+      pass "remove-line restocked (+2) with a tab ledger row"
+
+      api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+        -d "{\"items\":[{\"product_id\": $PID, \"quantity\": 1}],\"idempotency_key\":\"$TBK-r2\"}" \
+        "$BASE/wp-json/haramara/v1/pos/tabs/$TABID/lines" >/dev/null
+
+      C=$(code "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+        -d "{\"declared_cash\": 1, \"idempotency_key\": \"$TBK-blocked\"}" "$BASE/wp-json/haramara/v1/pos/shift/close")
+      [ "$C" = "409" ] || fail "shift close over open tab returned $C (want 409)"
+      pass "shift close blocked by open tab -> 409"
+
+      S3=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/products" | $JQ -r "[.products[] | select(.id == $PID)][0].stock_quantity")
+      TORDER=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+        -d "{\"payment\": \"cash\", \"idempotency_key\": \"$TBK-settle\"}" "$BASE/wp-json/haramara/v1/pos/tabs/$TABID/close")
+      echo "$TORDER" | $JQ -e --argjson p "$SALE_TOTAL" '.total == $p and (.folio | length > 0)' >/dev/null \
+        || { echo "$TORDER" | $JQ '{total, folio}'; fail "tab settle order shape"; }
+      S4=$(api "${AUTH[@]}" "$BASE/wp-json/haramara/v1/pos/products" | $JQ -r "[.products[] | select(.id == $PID)][0].stock_quantity")
+      [ "$S4" = "$S3" ] || fail "tab settle moved stock $S3 -> $S4 (must not double-decrement)"
+      pass "tab settled into order #$(echo "$TORDER" | $JQ -r '.id'), stock untouched at close"
+
+      TCLOSE=$(api "${AUTH[@]}" -X POST -H 'Content-Type: application/json' -H "X-Pos-Operator: $OP_TOKEN" \
+        -d "{\"declared_cash\": $(( 600 + ${SALE_TOTAL%%.*} )), \"idempotency_key\": \"$TBK-close\"}" \
+        "$BASE/wp-json/haramara/v1/pos/shift/close")
+      echo "$TCLOSE" | $JQ -e '.shift.variance == 0' >/dev/null \
+        || { echo "$TCLOSE" | $JQ '.shift'; fail "tab-settled cash missing from the arqueo"; }
+      pass "tab-settled cash landed in the arqueo (variance 0)"
+    fi
   fi
 fi
 

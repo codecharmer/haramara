@@ -105,6 +105,17 @@ return array(
 	),
 
 	array(
+		'title'            => 'Factura',
+		'slug'             => 'factura',
+		'template'         => 'page-no-title',
+		'status'           => 'publish',
+		'is_front'         => false,
+		'content'          => '<!-- wp:pattern {"slug":"haramara/factura"} /-->',
+		'seo_short'        => 'Facturación Haramara: genera tu CFDI con el folio del ticket.',
+		'meta_description' => 'Genera tu factura (CFDI 4.0) de Haramara Café con el folio y el total impresos en tu ticket. Recibe el PDF y el XML en tu correo.',
+	),
+
+	array(
 		'title'            => 'Aviso de privacidad',
 		'slug'             => 'aviso-de-privacidad',
 		'template'         => '',

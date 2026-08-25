@@ -161,6 +161,14 @@ return array(
 	'Efectivo o tarjeta al recoger en barra.'              => 'Cash or card when you pick up at the bar.',
 	'Tu pedido se paga al recogerlo en Tulipán 302.'       => 'Your order is paid for at pickup, at Tulipán 302.',
 
+	/* ------------------------------------- Modificadores (storefront) */
+	'>Obligatorio<'                                        => '>Required<',
+	'>Leche<'                                              => '>Milk<',
+	'>Leche:<'                                             => '>Milk:<',
+	'>Entera<'                                             => '>Whole<',
+	'>Avena<'                                              => '>Oat<',
+	'>Deslactosada<'                                       => '>Lactose-free<',
+
 	/* ----------------------------------------------------- Historia page */
 	'Creamos a través de procesos manuales.'               => 'We create through manual processes.',
 	'Haramara nace de una casa con más de treinta años de oficio en Cuernavaca: la misma familia gastronómica de Cocina Suiza, Pacífica y Malva. Aquí ese oficio se concentra en dos cosas — el café de especialidad y el pan de masa madre — y en el tiempo que ambos piden.' => 'Haramara comes from a house with more than thirty years of craft in Cuernavaca: the same gastronomic family behind Cocina Suiza, Pacífica and Malva. Here that craft narrows to two things — specialty coffee and sourdough bread — and the time both of them ask for.',
@@ -185,6 +193,40 @@ return array(
 	'Ya tengo cuenta'                                      => 'I already have an account',
 
 	/* ---------------------------------------------------- Visítanos page */
+
+	/* ------------------------------------------------------ Factura page */
+	'>Facturación<'                                        => '>Invoicing<',
+	'Genera la factura (CFDI) de tu consumo con el folio impreso en tu ticket.' => 'Generate the CFDI invoice for your purchase with the folio printed on your ticket.',
+	'Folio del ticket'                                     => 'Ticket folio',
+	'Total del ticket (MXN)'                               => 'Ticket total (MXN)',
+	'Validar ticket'                                       => 'Validate ticket',
+	'Tu consumo'                                           => 'Your purchase',
+	'Tus datos fiscales'                                   => 'Your tax details',
+	'Razón social (sin régimen societario)'                => 'Registered name (without the legal-form suffix)',
+	'Régimen fiscal'                                       => 'Tax regime',
+	'601 — General de Ley Personas Morales'                => '601 — General regime (companies)',
+	'603 — Personas Morales con Fines no Lucrativos'       => '603 — Non-profit entities',
+	'605 — Sueldos y Salarios e Ingresos Asimilados a Salarios' => '605 — Wages, salaries and assimilated income',
+	'606 — Arrendamiento'                                  => '606 — Leasing',
+	'612 — Personas Físicas con Actividades Empresariales y Profesionales' => '612 — Individuals with business and professional activity',
+	'616 — Sin obligaciones fiscales'                      => '616 — No tax obligations',
+	'621 — Incorporación Fiscal'                           => '621 — Fiscal incorporation',
+	'626 — Régimen Simplificado de Confianza (RESICO)'     => '626 — Simplified trust regime (RESICO)',
+	'Uso de CFDI'                                          => 'CFDI use',
+	'G03 — Gastos en general'                              => 'G03 — General expenses',
+	'G01 — Adquisición de mercancías'                      => 'G01 — Purchase of goods',
+	'S01 — Sin efectos fiscales'                           => 'S01 — No fiscal effects',
+	'D01 — Honorarios médicos, dentales y gastos hospitalarios' => 'D01 — Medical, dental and hospital expenses',
+	'CP01 — Pagos'                                         => 'CP01 — Payments',
+	'Código postal fiscal'                                 => 'Tax ZIP code',
+	'Correo electrónico'                                   => 'Email address',
+	'Generar factura'                                      => 'Generate invoice',
+	'Factura generada'                                     => 'Invoice generated',
+	'Te enviamos el PDF y el XML a tu correo.'             => 'We sent the PDF and XML to your email.',
+	'Descargar PDF'                                        => 'Download PDF',
+	'Descargar XML'                                        => 'Download XML',
+	'La facturación en línea aún no está disponible. Guarda tu ticket e inténtalo más tarde.' => 'Online invoicing is not available yet. Keep your ticket and try again later.',
+	'No pudimos conectar. Revisa tu conexión e inténtalo de nuevo.' => 'We could not connect. Check your connection and try again.',
 
 	/* -------------------------------------------------- Blog / archive */
 	'>Diario<'                                             => '>Journal<',
@@ -223,6 +265,8 @@ return array(
 	'Lealtad Haramara vive en un código QR: cada visita suma y los canjes se aplican en barra. Crea tu cuenta en un minuto.' => 'Haramara Loyalty lives in a QR code: every visit counts and rewards are applied at the bar. Create your account in one minute.',
 	'Dónde está Haramara y cuándo abre.'                   => 'Where Haramara is, and when it opens.',
 	'Haramara: Tulipán 302, esq. Hule, Col. Delicias, Cuernavaca. Miércoles a lunes de 8:00 a 20:00; martes descansamos. WhatsApp 777 136 2228.' => 'Haramara: Tulipán 302, corner of Hule, Col. Delicias, Cuernavaca. Wednesday to Monday, 8:00 to 20:00; on Tuesdays we rest. WhatsApp 777 136 2228.',
+	'Facturación Haramara: genera tu CFDI con el folio del ticket.' => 'Haramara invoicing: generate your CFDI with the ticket folio.',
+	'Genera tu factura (CFDI 4.0) de Haramara Café con el folio y el total impresos en tu ticket. Recibe el PDF y el XML en tu correo.' => 'Generate your Haramara Café invoice (CFDI 4.0) with the folio and total printed on your ticket. Receive the PDF and XML by email.',
 
 	/* --------------------------------------------------------- Alt text */
 	'Barista de Haramara vertiendo leche sobre un café en la penumbra de la barra' => 'Haramara barista pouring milk into a coffee in the half-light of the bar',
@@ -249,6 +293,7 @@ return array(
 	'<title>Mi cuenta'                                     => '<title>My account',
 	'>Carrito<'                                            => '>Cart<',
 	'>Mi cuenta<'                                          => '>My account<',
+	'<title>Factura'                                       => '<title>Invoice',
 	'<title>Aviso de privacidad'                           => '<title>Privacy notice',
 	'<title>Términos'                                      => '<title>Terms',
 

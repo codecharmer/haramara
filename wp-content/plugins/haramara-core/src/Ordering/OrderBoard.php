@@ -143,6 +143,22 @@ final class OrderBoard {
 	}
 
 	/**
+	 * An inclusive café-local date span as an epoch range (reportes por rango).
+	 *
+	 * @param string $from First day (YYYY-MM-DD).
+	 * @param string $to   Last day, inclusive (YYYY-MM-DD).
+	 */
+	public static function span_range( string $from, string $to ): string {
+		$start = \DateTimeImmutable::createFromFormat( '!Y-m-d', $from, Options::timezone() );
+		$last  = \DateTimeImmutable::createFromFormat( '!Y-m-d', $to, Options::timezone() );
+		if ( false === $start || false === $last ) {
+			return $from;
+		}
+		$end = $last->modify( '+1 day' );
+		return $start->getTimestamp() . '...' . ( $end->getTimestamp() - 1 );
+	}
+
+	/**
 	 * Full board payload for a date: pickup orders grouped by slot, the day's
 	 * walk-ins, and attention counts.
 	 *
@@ -231,6 +247,7 @@ final class OrderBoard {
 			'folio'                => Folios::for_order( $order->get_id() ),
 			'tip'                  => (float) $order->get_meta( WalkInOrders::META_TIP ),
 			'tip_method'           => (string) $order->get_meta( WalkInOrders::META_TIP_METHOD ),
+			'card_reference'       => (string) $order->get_meta( WalkInOrders::META_CARD_REF ),
 			'status'               => $order->get_status(),
 			'status_label'         => function_exists( 'wc_get_order_status_name' )
 				? (string) wc_get_order_status_name( $order->get_status() )

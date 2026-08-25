@@ -55,6 +55,14 @@ final class WalkInOrders {
 	/** How a tip was handed over. Cash lands in the drawer; card rides the terminal batch. */
 	public const TIP_METHODS = array( 'cash', 'card' );
 
+	/**
+	 * External-terminal reference (order meta). The Clip/Point/bank terminal
+	 * prints an auth/reference number with every charge; capturing it is what
+	 * lets the day's card orders reconcile against the terminal batch by hand
+	 * until a real terminal integration exists.
+	 */
+	public const META_CARD_REF = '_haramara_pos_card_ref';
+
 	/** Accepted counter payment kinds. */
 	public const PAYMENTS = array( 'cash', 'card_external' );
 
@@ -75,9 +83,15 @@ final class WalkInOrders {
 	 * @param array{amount?:float,method?:string} $tip Propina. Stored as meta only —
 	 *                  never a line, never revenue. method defaults to the payment
 	 *                  kind (cash sale → cash tip).
+	 * @param array{stock_already_reserved?:bool} $flags stock_already_reserved: the
+	 *                  caller (Ordering\Tabs) took the stock at serve-time, so
+	 *                  availability is neither re-checked nor re-decremented —
+	 *                  `_order_stock_reduced` is pre-set so WooCommerce's
+	 *                  completed-status reduction skips, and a later cancel
+	 *                  restores correctly.
 	 * @return \WC_Order|\WP_Error
 	 */
-	public static function create( array $items, string $payment, string $note = '', array $operator = array(), array $discount = array(), array $tip = array() ) {
+	public static function create( array $items, string $payment, string $note = '', array $operator = array(), array $discount = array(), array $tip = array(), array $flags = array(), string $card_reference = '' ) {
 		if ( ! function_exists( 'wc_create_order' ) || ! function_exists( 'wc_get_product' ) ) {
 			return new \WP_Error(
 				'haramara_wc_unavailable',
@@ -95,7 +109,9 @@ final class WalkInOrders {
 			);
 		}
 
-		$lines = self::resolve_lines( $items );
+		$stock_reserved = ! empty( $flags['stock_already_reserved'] );
+
+		$lines = self::resolve_lines( $items, $stock_reserved );
 		if ( is_wp_error( $lines ) ) {
 			return $lines;
 		}
@@ -297,10 +313,23 @@ final class WalkInOrders {
 			$order->update_meta_data( self::META_TIP_METHOD, $tip_method );
 		}
 
+		$card_reference = substr( sanitize_text_field( $card_reference ), 0, 40 );
+		if ( '' !== $card_reference ) {
+			$order->update_meta_data( self::META_CARD_REF, $card_reference );
+		}
+
 		$order->calculate_totals();
 
 		if ( '' !== trim( $note ) ) {
 			$order->add_order_note( sanitize_textarea_field( $note ) );
+		}
+
+		if ( $stock_reserved ) {
+			// The tab already decremented stock line by line at serve-time.
+			// This flag is what wc_maybe_reduce_stock_levels checks before
+			// reducing on `completed` — and what makes a later cancellation
+			// restore stock, keeping the whole lifecycle coherent.
+			$order->update_meta_data( '_order_stock_reduced', 'true' );
 		}
 
 		// Paid and handed over at the counter: `completed` reduces stock and
@@ -344,7 +373,7 @@ final class WalkInOrders {
 	 * @param array<int,array{product_id:int,quantity:int}> $items Sale lines.
 	 * @return array<int,array{product:\WC_Product,quantity:int}>|\WP_Error
 	 */
-	private static function resolve_lines( array $items ) {
+	private static function resolve_lines( array $items, bool $skip_stock_checks = false ) {
 		if ( empty( $items ) ) {
 			return new \WP_Error(
 				'haramara_empty_sale',
@@ -379,7 +408,7 @@ final class WalkInOrders {
 				);
 			}
 
-			if ( ! $product->is_in_stock() ) {
+			if ( ! $skip_stock_checks && ! $product->is_in_stock() ) {
 				return new \WP_Error(
 					'haramara_out_of_stock',
 					sprintf(
@@ -392,7 +421,7 @@ final class WalkInOrders {
 			}
 
 			$stock = $product->get_stock_quantity();
-			if ( $product->managing_stock() && ! $product->backorders_allowed() && null !== $stock && (int) $stock < $quantity ) {
+			if ( ! $skip_stock_checks && $product->managing_stock() && ! $product->backorders_allowed() && null !== $stock && (int) $stock < $quantity ) {
 				return new \WP_Error(
 					'haramara_insufficient_stock',
 					sprintf(
