@@ -8,21 +8,35 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { StoreProduct } from '@haramara/api-client';
+import type { ModifierSelection, StoreProduct } from '@haramara/api-client';
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { formatMinorUnits } from '@haramara/api-client';
 
-const CART_KEY = 'haramara_cart_v1';
+const CART_KEY = 'haramara_cart_v2';
+/** v1 lines lacked per-selection keys; migrated on load with empty selections. */
+const LEGACY_CART_KEY = 'haramara_cart_v1';
 const ORDERS_KEY = 'haramara_orders_v1';
 
 export interface CartLine {
+	/** Stable line id: product + exact selections. Two lattes with different
+	 * milks are two lines — same scheme the POS ticket uses. */
+	key: string;
 	productId: number;
 	name: string;
-	/** Unit price in MXN (major units). */
+	/** Unit price in MXN (major units), WITHOUT the modifier delta. */
 	price: number;
+	/** Per-unit MXN delta from the selections (server re-prices at checkout). */
+	priceDelta: number;
+	modifiers: ModifierSelection[];
+	/** "Leche: Avena" — display only. */
+	modifierLabels: string[];
 	image: string;
 	quantity: number;
+}
+
+export function lineKey(productId: number, selections: ModifierSelection[]): string {
+	return selections.length === 0 ? String(productId) : `${productId}:${JSON.stringify(selections)}`;
 }
 
 export interface LocalOrder {
@@ -38,8 +52,14 @@ interface CartState {
 	lines: CartLine[];
 	count: number;
 	total: number;
-	add: (product: StoreProduct, quantity?: number) => void;
-	setQuantity: (productId: number, quantity: number) => void;
+	add: (
+		product: StoreProduct,
+		quantity?: number,
+		selections?: ModifierSelection[],
+		priceDelta?: number,
+		modifierLabels?: string[],
+	) => void;
+	setQuantity: (lineKey: string, quantity: number) => void;
 	clear: () => void;
 	orders: LocalOrder[];
 	rememberOrder: (order: LocalOrder) => void;
@@ -58,8 +78,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
 	useEffect(() => {
 		Promise.all([AsyncStorage.getItem(CART_KEY), AsyncStorage.getItem(ORDERS_KEY)])
-			.then(([cartRaw, ordersRaw]) => {
-				if (cartRaw) setLines(JSON.parse(cartRaw) as CartLine[]);
+			.then(async ([cartRaw, ordersRaw]) => {
+				if (cartRaw) {
+					setLines(JSON.parse(cartRaw) as CartLine[]);
+				} else {
+					// One-time v1 migration: old lines had no key/selections.
+					const legacy = await AsyncStorage.getItem(LEGACY_CART_KEY);
+					if (legacy) {
+						const old = JSON.parse(legacy) as Array<Omit<CartLine, 'key' | 'priceDelta' | 'modifiers' | 'modifierLabels'>>;
+						setLines(
+							old.map((l) => ({
+								...l,
+								key: lineKey(l.productId, []),
+								priceDelta: 0,
+								modifiers: [],
+								modifierLabels: [],
+							})),
+						);
+						void AsyncStorage.removeItem(LEGACY_CART_KEY);
+					}
+				}
 				if (ordersRaw) setOrders(JSON.parse(ordersRaw) as LocalOrder[]);
 			})
 			.catch(() => undefined)
@@ -74,32 +112,44 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 		if (hydrated) void AsyncStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
 	}, [orders, hydrated]);
 
-	const add = useCallback((product: StoreProduct, quantity = 1) => {
-		setLines((prev) => {
-			const existing = prev.find((l) => l.productId === product.id);
-			if (existing) {
-				return prev.map((l) =>
-					l.productId === product.id ? { ...l, quantity: Math.min(99, l.quantity + quantity) } : l,
-				);
-			}
-			return [
-				...prev,
-				{
-					productId: product.id,
-					name: product.name,
-					price: productPrice(product),
-					image: product.images[0]?.thumbnail ?? '',
-					quantity: Math.min(99, quantity),
-				},
-			];
-		});
-	}, []);
+	const add = useCallback(
+		(
+			product: StoreProduct,
+			quantity = 1,
+			selections: ModifierSelection[] = [],
+			priceDelta = 0,
+			modifierLabels: string[] = [],
+		) => {
+			setLines((prev) => {
+				const key = lineKey(product.id, selections);
+				const existing = prev.find((l) => l.key === key);
+				if (existing) {
+					return prev.map((l) => (l.key === key ? { ...l, quantity: Math.min(99, l.quantity + quantity) } : l));
+				}
+				return [
+					...prev,
+					{
+						key,
+						productId: product.id,
+						name: product.name,
+						price: productPrice(product),
+						priceDelta,
+						modifiers: selections,
+						modifierLabels,
+						image: product.images[0]?.thumbnail ?? '',
+						quantity: Math.min(99, quantity),
+					},
+				];
+			});
+		},
+		[],
+	);
 
-	const setQuantity = useCallback((productId: number, quantity: number) => {
+	const setQuantity = useCallback((key: string, quantity: number) => {
 		setLines((prev) =>
 			quantity <= 0
-				? prev.filter((l) => l.productId !== productId)
-				: prev.map((l) => (l.productId === productId ? { ...l, quantity: Math.min(99, quantity) } : l)),
+				? prev.filter((l) => l.key !== key)
+				: prev.map((l) => (l.key === key ? { ...l, quantity: Math.min(99, quantity) } : l)),
 		);
 	}, []);
 
@@ -111,7 +161,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
 	const value = useMemo<CartState>(() => {
 		const count = lines.reduce((n, l) => n + l.quantity, 0);
-		const total = lines.reduce((sum, l) => sum + l.price * l.quantity, 0);
+		const total = lines.reduce((sum, l) => sum + (l.price + l.priceDelta) * l.quantity, 0);
 		return { lines, count, total, add, setQuantity, clear, orders, rememberOrder };
 	}, [lines, orders, add, setQuantity, clear, rememberOrder]);
 

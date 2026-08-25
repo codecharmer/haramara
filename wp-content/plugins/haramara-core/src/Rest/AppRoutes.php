@@ -156,10 +156,22 @@ final class AppRoutes implements Bootable {
 
 		$items = array();
 		foreach ( $order->get_items() as $item ) {
+			// Visible modifier meta ("Leche: Avena (+$15.00)") so the
+			// confirmation screen shows what was actually ordered.
+			$modifiers = array();
+			foreach ( $item->get_meta_data() as $meta ) {
+				$data = $meta->get_data();
+				$key  = (string) $data['key'];
+				if ( '' !== $key && '_' !== $key[0] && is_scalar( $data['value'] ) ) {
+					$modifiers[] = $key . ': ' . (string) $data['value'];
+				}
+			}
+
 			$items[] = array(
-				'name'     => $item->get_name(),
-				'quantity' => (int) $item->get_quantity(),
-				'total'    => (float) $order->get_line_total( $item, true ),
+				'name'      => $item->get_name(),
+				'quantity'  => (int) $item->get_quantity(),
+				'total'     => (float) $order->get_line_total( $item, true ),
+				'modifiers' => $modifiers,
 			);
 		}
 

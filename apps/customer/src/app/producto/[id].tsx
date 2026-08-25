@@ -1,9 +1,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ModifierSheet } from '../../components/modifier-sheet';
 
 import { storeApi } from '../../lib/api';
 import { productPrice, useCart } from '../../lib/cart';
@@ -17,6 +19,8 @@ export default function ProductScreen() {
 
 	const products = useQuery({ queryKey: ['products'], queryFn: () => storeApi.products() });
 	const product = products.data?.find((p) => p.id === Number(id));
+	const groups = product?.extensions?.haramara?.modifier_groups ?? [];
+	const [sheetOpen, setSheetOpen] = useState(false);
 	const inCart = cart.lines.find((l) => l.productId === Number(id))?.quantity ?? 0;
 
 	return (
@@ -77,6 +81,10 @@ export default function ProductScreen() {
 					<Pressable
 						accessibilityRole="button"
 						onPress={() => {
+							if (groups.length > 0) {
+								setSheetOpen(true);
+								return;
+							}
 							cart.add(product);
 							if (router.canGoBack()) {
 								router.back();
@@ -92,12 +100,63 @@ export default function ProductScreen() {
 					</Pressable>
 				</View>
 			)}
+
+			{sheetOpen && product && (
+				<View style={styles.sheetOverlay}>
+					<View style={styles.sheetCard}>
+						<Text style={styles.sheetTitle}>{product.name}</Text>
+						<ModifierSheet
+							groups={groups}
+							onConfirm={(selections, priceDelta) => {
+								const labels = selections.map((sel) => {
+									const group = groups.find((g) => g.id === sel.group_id);
+									const names = sel.option_keys
+										.map((k) => group?.options.find((o) => o.key === k)?.name)
+										.filter((n): n is string => n !== undefined);
+									return group && names.length > 0 ? `${group.name}: ${names.join(', ')}` : '';
+								}).filter((l) => l !== '');
+								cart.add(product, 1, selections, priceDelta, labels);
+								setSheetOpen(false);
+								if (router.canGoBack()) {
+									router.back();
+								} else {
+									router.replace('/');
+								}
+							}}
+							onCancel={() => setSheetOpen(false)}
+						/>
+					</View>
+				</View>
+			)}
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	screen: { flex: 1, backgroundColor: color.bg },
+	sheetOverlay: {
+		position: 'absolute',
+		top: 0,
+		right: 0,
+		bottom: 0,
+		left: 0,
+		backgroundColor: 'rgba(0,0,0,0.6)',
+		alignItems: 'center',
+		justifyContent: 'center',
+		padding: space(5),
+	},
+	sheetCard: {
+		width: '100%',
+		maxWidth: 440,
+		maxHeight: '85%',
+		backgroundColor: color.surface,
+		borderRadius: radius.card,
+		borderWidth: 1,
+		borderColor: color.hairline,
+		padding: space(5),
+		gap: space(3),
+	},
+	sheetTitle: { color: color.text, fontSize: type.title, fontFamily: font.display },
 	hero: { width: '100%', height: 320, backgroundColor: color.accentSoft },
 	heroFallback: { alignItems: 'center', justifyContent: 'center' },
 	heroGlyph: { fontFamily: font.display, fontSize: 72, color: color.accentDeep },

@@ -35,7 +35,7 @@ export default function CartScreen() {
 				<>
 					<ScrollView contentContainerStyle={styles.list}>
 						{cart.lines.map((line) => (
-							<View key={line.productId} style={styles.row}>
+							<View key={line.key} style={styles.row}>
 								{line.image !== '' ? (
 									<Image source={{ uri: line.image }} style={styles.thumb} contentFit="cover" />
 								) : (
@@ -47,13 +47,18 @@ export default function CartScreen() {
 									<Text style={styles.rowName} numberOfLines={1}>
 										{line.name}
 									</Text>
-									<Text style={styles.rowPrice}>{money(line.price)}</Text>
+									{line.modifierLabels.length > 0 && (
+										<Text style={styles.rowMods} numberOfLines={2}>
+											{line.modifierLabels.join(' · ')}
+										</Text>
+									)}
+									<Text style={styles.rowPrice}>{money(line.price + line.priceDelta)}</Text>
 								</View>
 								<View style={styles.stepper}>
 									<Pressable
 										accessibilityLabel={`Quitar ${line.name}`}
 										style={styles.step}
-										onPress={() => cart.setQuantity(line.productId, line.quantity - 1)}
+										onPress={() => cart.setQuantity(line.key, line.quantity - 1)}
 									>
 										<Text style={styles.stepText}>−</Text>
 									</Pressable>
@@ -61,7 +66,7 @@ export default function CartScreen() {
 									<Pressable
 										accessibilityLabel={`Agregar ${line.name}`}
 										style={styles.step}
-										onPress={() => cart.setQuantity(line.productId, line.quantity + 1)}
+										onPress={() => cart.setQuantity(line.key, line.quantity + 1)}
 									>
 										<Text style={styles.stepText}>+</Text>
 									</Pressable>
@@ -122,6 +127,7 @@ const styles = StyleSheet.create({
 	thumbGlyph: { fontFamily: font.display, fontSize: 24, color: color.accentDeep },
 	rowBody: { flex: 1, gap: space(0.5) },
 	rowName: { color: color.text, fontSize: type.body, fontWeight: '600' },
+	rowMods: { color: color.textSoft, fontSize: 12, lineHeight: 16 },
 	rowPrice: { color: color.textSoft, fontSize: type.small },
 	stepper: { flexDirection: 'row', alignItems: 'center', gap: space(1.5) },
 	step: {
